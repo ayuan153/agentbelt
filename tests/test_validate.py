@@ -1,5 +1,5 @@
-"""Tests for fail-fast config validation + the --check CLI."""
-from seatbelt.__main__ import main
+"""Tests for fail-fast config validation + the check CLI."""
+from seatbelt.cli import main
 from seatbelt.config import from_dict
 from seatbelt.validate import validate
 
@@ -36,7 +36,7 @@ def test_check_cli_returns_0_on_valid(tmp_path, monkeypatch):
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(_OK))
     monkeypatch.setenv("SEATBELT_CONFIG", str(p))
-    assert main(["--check"]) == 0
+    assert main(["check"]) == 0
 
 
 def test_check_cli_returns_1_on_invalid(tmp_path, monkeypatch):
@@ -45,4 +45,4 @@ def test_check_cli_returns_1_on_invalid(tmp_path, monkeypatch):
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(bad))
     monkeypatch.setenv("SEATBELT_CONFIG", str(p))
-    assert main(["--check"]) == 1
+    assert main(["check"]) == 1
