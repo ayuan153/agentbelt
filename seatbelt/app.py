@@ -22,7 +22,6 @@ from fastapi.responses import JSONResponse
 
 from seatbelt.mcp_discovery import discover_annotations
 from seatbelt.plugins import resolve as resolve_provider
-from seatbelt.provenance import ProvenanceTracker
 from seatbelt.telemetry import AuditSink
 from seatbelt.tooltier import resolve_tier
 from seatbelt.types import AuthzRequest, Message, SeatbeltConfig, Session, TelemetryRecord
@@ -67,7 +66,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=
     egress = resolve_provider("egress", p.get("egress"), cfg)
     pdp = resolve_provider("pdp", p.get("pdp"), cfg)
     risk = resolve_provider("risk", p.get("risk") or cfg.risk.scorer, cfg)  # risk.scorer kept for back-compat
-    provenance = ProvenanceTracker()
+    provenance = resolve_provider("provenance", p.get("provenance"), cfg)
     # Optional MCP annotation discovery from trusted servers (no startup network unless fetch given).
     registry = discover_annotations(cfg.trusted_tool_servers, fetch=mcp_fetch) if mcp_fetch else {}
     audit = AuditSink()

@@ -43,6 +43,11 @@ def test_resolve_unknown_builtin_raises():
         resolve("risk", "does_not_exist", _cfg())
 
 
+def test_resolve_provenance_provider():
+    from seatbelt.provenance import ProvenanceTracker
+    assert isinstance(resolve("provenance", None, _cfg()), ProvenanceTracker)
+
+
 # --- end-to-end: a custom scorer selected purely by config changes proxy behavior ---
 
 class _Up:

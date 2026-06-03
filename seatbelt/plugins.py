@@ -19,15 +19,17 @@ from typing import Callable
 from seatbelt.budget import TokenWeightedBudgetGovernor
 from seatbelt.egress import LinkPolicyEgressGuard
 from seatbelt.pdp import CedarPDP
+from seatbelt.provenance import ProvenanceTracker
 from seatbelt.risk import CrescendoRiskScorer
 from seatbelt.risk_semantic import SemanticDriftRiskScorer
 from seatbelt.scope import DeterministicScopeGuard
 
 Factory = Callable[[object], object]  # factory(cfg) -> component instance
 
-_REGISTRY: dict[str, dict[str, Factory]] = {"scope": {}, "risk": {}, "budget": {}, "egress": {}, "pdp": {}}
+_REGISTRY: dict[str, dict[str, Factory]] = {
+    "scope": {}, "risk": {}, "budget": {}, "egress": {}, "pdp": {}, "provenance": {}}
 _DEFAULTS = {"scope": "deterministic", "risk": "crescendo", "budget": "token_weighted",
-             "egress": "link_policy", "pdp": "cedar"}
+             "egress": "link_policy", "pdp": "cedar", "provenance": "default"}
 
 
 def register(kind: str, name: str):
@@ -85,3 +87,8 @@ def _egress(cfg):
 @register("pdp", "cedar")
 def _pdp(cfg):
     return CedarPDP()
+
+
+@register("provenance", "default")
+def _provenance(cfg):
+    return ProvenanceTracker()

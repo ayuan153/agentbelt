@@ -4,7 +4,7 @@ Seatbelt's guards are **pluggable**. Without training anything in the harness, a
 in their own scope classifier, multi-turn risk model, policy engine, etc. Decision rationale:
 [ADR-0005](../decisions/ADR-0005-plugin-interface.md).
 
-## The five extension points (contracts)
+## The six extension points (contracts)
 
 Each is a Protocol in `seatbelt/types.py`. Implement the one you want to replace:
 
@@ -15,6 +15,7 @@ Each is a Protocol in `seatbelt/types.py`. Implement the one you want to replace
 | `budget` | `BudgetGovernor` | `check(...)`, `record(...)` | `token_weighted` |
 | `egress` | `EgressGuard` | `sanitize(text, cfg) -> EgressResult` | `link_policy` |
 | `pdp` | `PolicyDecisionPoint` | `decide(req) -> Decision` | `cedar` |
+| `provenance` | `ProvenanceProvider` | `turn_trust(session, messages) -> str` | `default` |
 
 ## How selection works
 
@@ -79,7 +80,10 @@ def make(cfg): return MyScorer(cfg.risk.threshold)
 - The factory contract is checked at runtime; a bad plugin fails fast at startup/first use.
 - Protocol signatures are fixed; if you need richer context than a method passes, read it from `cfg`
   at construction. Widening a Protocol is a future versioned change.
-- `ProvenanceTracker` and the audit sink are infrastructure, not (yet) pluggable.
+- `ProvenanceTracker` (the `provenance` kind) is now pluggable; only the audit sink remains infra.
+- **Validated fail-fast:** `python -m seatbelt --check` (and a normal boot) constructs every provider
+  via `seatbelt/validate.py`, so a bad built-in name or an unimportable plugin path is reported at
+  startup with `ERROR: provider[<kind>]=...`, not at first request.
 
 ## Tested
 

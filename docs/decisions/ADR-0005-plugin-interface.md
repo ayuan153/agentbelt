@@ -43,8 +43,14 @@ its Protocol method.
 
 The previous `risk.scorer` field is retained as a back-compat alias for `providers.risk`.
 
-`ProvenanceTracker` and the audit sink are **infrastructure**, not extension points, so they are not
-pluggable (yet).
+There are **six** pluggable kinds: `scope`, `risk`, `budget`, `egress`, `pdp`, and `provenance`
+(the H2 context firewall — `ProvenanceProvider.turn_trust`). The audit sink remains infrastructure
+and is not pluggable.
+
+Configuration is validated **fail-fast**: `seatbelt/validate.py` constructs every provider (so a
+bad built-in name or an unimportable plugin path is caught at boot, not at first request) and
+sanity-checks key knobs. `python -m seatbelt` validates on startup; `python -m seatbelt --check`
+validates only (exit 0 ok / 1 errors).
 
 ## Consequences
 

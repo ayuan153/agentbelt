@@ -188,3 +188,8 @@ class EgressGuard(Protocol):
 
 class PolicyDecisionPoint(Protocol):
     def decide(self, req: AuthzRequest) -> Decision: ...
+
+
+class ProvenanceProvider(Protocol):
+    # H2 context firewall: returns this turn's provenance_max_trust ("trusted"|"user"|"untrusted")
+    def turn_trust(self, session: Session, messages: list[dict]) -> str: ...

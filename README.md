@@ -92,6 +92,9 @@ pip install -r requirements.txt
 # Run the red-team + benign test suite (no API keys needed — uses a mock upstream)
 pytest -q
 
+# Validate config + all providers (fail-fast; great for CI) — exit 0 ok / 1 on errors
+SEATBELT_CONFIG=config/burritobot.yaml python -m seatbelt --check
+
 # Or run the proxy locally (forwards to OPENAI_API_KEY upstream; localhost only)
 SEATBELT_CONFIG=config/burritobot.yaml python -m seatbelt   # serves :8088/v1/chat/completions
 ```
