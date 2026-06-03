@@ -39,4 +39,5 @@ def from_dict(raw: dict) -> SeatbeltConfig:
         tool_tiers=raw.get("tool_tiers", {}),
         trusted_tool_servers=raw.get("trusted_tool_servers", []),
         risk=risk,
+        providers=raw.get("providers", {}),
     )

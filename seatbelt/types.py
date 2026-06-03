@@ -94,6 +94,8 @@ class SeatbeltConfig:
     tool_tiers: dict = field(default_factory=dict)
     trusted_tool_servers: list[str] = field(default_factory=list)
     risk: "RiskConfig" = field(default_factory=lambda: RiskConfig())
+    # provider selection per extension point: name (built-in) or "module:factory" (your own)
+    providers: dict = field(default_factory=dict)
 
 
 # --- guard results -----------------------------------------------------------

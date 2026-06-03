@@ -20,14 +20,9 @@ from typing import Callable
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from seatbelt.budget import TokenWeightedBudgetGovernor
-from seatbelt.egress import LinkPolicyEgressGuard
 from seatbelt.mcp_discovery import discover_annotations
-from seatbelt.pdp import CedarPDP
+from seatbelt.plugins import resolve as resolve_provider
 from seatbelt.provenance import ProvenanceTracker
-from seatbelt.risk import CrescendoRiskScorer
-from seatbelt.risk_semantic import SemanticDriftRiskScorer
-from seatbelt.scope import DeterministicScopeGuard
 from seatbelt.telemetry import AuditSink
 from seatbelt.tooltier import resolve_tier
 from seatbelt.types import AuthzRequest, Message, SeatbeltConfig, Session, TelemetryRecord
@@ -65,18 +60,14 @@ def _default_upstream(base_url: str) -> Upstream:
 
 def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=None) -> FastAPI:
     app = FastAPI(title="Seatbelt", version="0.1.0")
-    scope_guard = DeterministicScopeGuard()
-    budget = TokenWeightedBudgetGovernor()
-    egress = LinkPolicyEgressGuard()
-    pdp = CedarPDP()
+    p = cfg.providers
+    # Each guard is resolved via a provider (built-in name or "module:factory"). See seatbelt/plugins.py.
+    scope_guard = resolve_provider("scope", p.get("scope"), cfg)
+    budget = resolve_provider("budget", p.get("budget"), cfg)
+    egress = resolve_provider("egress", p.get("egress"), cfg)
+    pdp = resolve_provider("pdp", p.get("pdp"), cfg)
+    risk = resolve_provider("risk", p.get("risk") or cfg.risk.scorer, cfg)  # risk.scorer kept for back-compat
     provenance = ProvenanceTracker()
-    # Pluggable risk scorer (ADR-0004): keyword Crescendo (default) or charter-drift proxy.
-    if cfg.risk.scorer == "semantic":
-        reference = cfg.scope.charter + " " + " ".join(
-            e.get("text", "") for e in cfg.scope.examples if e.get("label") == "onscope")
-        risk = SemanticDriftRiskScorer(reference)
-    else:
-        risk = CrescendoRiskScorer()
     # Optional MCP annotation discovery from trusted servers (no startup network unless fetch given).
     registry = discover_annotations(cfg.trusted_tool_servers, fetch=mcp_fetch) if mcp_fetch else {}
     audit = AuditSink()

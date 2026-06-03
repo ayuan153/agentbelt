@@ -104,6 +104,10 @@ a flood trips the per-principal budget; exfil links in model output are stripped
 calls are tiered by a generic resolver (operator override → trusted-server MCP annotations →
 heuristic → default-sensitive).
 
+Every guard (scope, risk, budget, egress, PDP) is a **pluggable provider**: keep the built-in, or
+point config at your own implementation by dotted path — `providers: { risk: "yourpkg:make" }` — no
+fork, no training inside the harness. See [`docs/lld/plugin-interface.md`](docs/lld/plugin-interface.md).
+
 **What this slice deliberately defers** (next slices): the context firewall, provenance tracking,
 and tool/action mediation that defend the *data-exfiltration* cluster (T3/T4/T5) — **now also
 implemented** (see [`docs/lld/data-exfiltration-slice.md`](docs/lld/data-exfiltration-slice.md)):

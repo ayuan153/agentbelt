@@ -11,6 +11,9 @@ Everything a deployment needs to express lives in three operator-owned config su
 1. **Scope contract** — what the agent is *for* (§2).
 2. **Tool risk map** — how dangerous each action is (§3).
 3. **Cedar policy + knobs** — the enforcement rules and operating points (§4–§7).
+4. **Provider selection** — *which implementation* of each guard to run: keep a built-in or point at
+   your own by dotted path (`providers: { risk: "yourpkg:make" }`). The "bring your own model"
+   seam — see [`lld/plugin-interface.md`](lld/plugin-interface.md) and ADR-0005.
 
 This document answers the "make it flexible / don't tie it to a use case" feedback on the
 [`open-questions.md`](open-questions.md) decision log, and grounds it in a worked
