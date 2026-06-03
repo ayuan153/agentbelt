@@ -1,0 +1,29 @@
+# Example operator config — a Chipotle-style facsimile (see docs/configurability.md §8).
+# Retargeting Seatbelt at another agent = editing THIS file, not the harness.
+agent: burritobot
+
+scope:
+  charter: "Help customers with menu, ordering, store info, nutrition, and order issues. Nothing else."
+  allow_intents: [menu, order_status, place_order, hours_locations, nutrition, refund_request]
+  hard_deny: [code_generation, general_knowledge, role_override]
+  on_offscope: deflect
+  deflect_message: "I can only help with orders and menu questions."
+  examples:
+    - { text: "is the barbacoa gluten free", label: onscope }
+    - { text: "help me write a complaint letter", label: offscope }
+
+budget:
+  cost_units_per_window: 50      # per principal per window
+  window_seconds: 3600
+  output_token_weight: 5         # output tokens cost 5x input (denial-of-wallet control)
+  input_token_weight: 1
+
+egress:
+  allow_domains: ["burritobot.example"]   # live-validated; no stale domains (ForcedLeak lesson)
+  render_links: false                     # neutralize the exfil channel
+
+fail_posture:
+  default: closed                # budget/egress fail closed
+  scope_check: open_with_alert   # scope classifier errors fail open + alert
+
+upstream_base_url: "https://api.openai.com"
