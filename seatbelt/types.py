@@ -33,6 +33,8 @@ class Session:
     cost_used: float = 0.0
     window_start: float = 0.0
     risk_score: float = 0.0
+    # provenance state (H2): content hashes already seen, to detect what is NEW this turn
+    seen_hashes: set[str] = field(default_factory=set)
 
 
 # --- operator config (loaded from YAML) --------------------------------------
@@ -77,6 +79,9 @@ class SeatbeltConfig:
     egress: EgressConfig
     fail_posture: FailPosture = field(default_factory=FailPosture)
     upstream_base_url: str = "https://api.openai.com"
+    # tool sensitivity tiers (H3): tool name -> "low" | "medium" | "high"; unlisted => default-sensitive
+    tool_tiers: dict = field(default_factory=dict)
+    trusted_tool_servers: list[str] = field(default_factory=list)
 
 
 # --- guard results -----------------------------------------------------------

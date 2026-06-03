@@ -12,6 +12,9 @@ class CedarPDP:
     POLICIES = """\
 permit(principal, action == Seatbelt::Action::"AdmitInput", resource);
 forbid(principal, action == Seatbelt::Action::"AdmitInput", resource) when { context.scope_verdict == "offscope" };
+permit(principal, action == Seatbelt::Action::"InvokeTool", resource);
+forbid(principal, action == Seatbelt::Action::"InvokeTool", resource) when { context.provenance_max_trust == "untrusted" && context.tier != "low" };
+forbid(principal, action == Seatbelt::Action::"InvokeTool", resource) when { context.tier == "high" && !(context.user_verified && context.human_confirmed) };
 permit(principal, action == Seatbelt::Action::"Egress", resource);
 forbid(principal, action == Seatbelt::Action::"Egress", resource) when { !resource.allowlisted };
 """

@@ -72,7 +72,7 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/decisions/` | Architecture Decision Records (interception contract, provenance model, Cedar schema) |
 | `docs/spikes/` | Focused design spikes (e.g., the gateway provenance/trust model) |
 | `docs/lld/` | Low-level designs for implementable slices (MVP: denial-of-wallet) |
-| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, budget, egress) + Cedar PDP |
+| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, budget, egress, provenance, Cedar PDP + tool mediation) |
 | `config/` | Example operator configs (`burritobot.yaml` — the Chipotle-style facsimile) |
 | `tests/` | Unit + red-team/benign integration tests (run with `pytest`) |
 
@@ -102,10 +102,14 @@ Python class"*) is **deflected without ever calling the upstream**, so it can't 
 a flood trips the per-principal budget; exfil links in model output are stripped.
 
 **What this slice deliberately defers** (next slices): the context firewall, provenance tracking,
-and tool/action mediation that defend the *data-exfiltration* cluster (T3/T4/T5). The PDP, scope
-rules, and budgets are operator-supplied via the config file — retargeting to another agent means
-editing the YAML, not the harness. The proxy is unauthenticated by design; a real deployment puts
-identity/principal verification in front of it (see D3 in [`docs/open-questions.md`](docs/open-questions.md)).
+and tool/action mediation that defend the *data-exfiltration* cluster (T3/T4/T5) — **now also
+implemented** (see [`docs/lld/data-exfiltration-slice.md`](docs/lld/data-exfiltration-slice.md)):
+the proxy tags content trust (tool results = untrusted), and Cedar **capability-downgrade** policies
+stop untrusted content from driving a state-changing tool call or egress, while high-impact tools
+require a verified user. The PDP, scope rules, tool tiers, and budgets are operator-supplied via the
+config file — retargeting to another agent means editing the YAML, not the harness. The proxy is
+unauthenticated by design; a real deployment puts identity/principal verification in front of it
+(see D3 in [`docs/open-questions.md`](docs/open-questions.md)).
 
 ---
 

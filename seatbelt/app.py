@@ -13,8 +13,8 @@ OPEN-with-alert. A *confident* offscope verdict is a deflection, not a failure.
 from __future__ import annotations
 
 import os
-import time
 import uuid
+from dataclasses import replace
 from typing import Callable
 
 from fastapi import FastAPI, Request
@@ -23,11 +23,14 @@ from fastapi.responses import JSONResponse
 from seatbelt.budget import TokenWeightedBudgetGovernor
 from seatbelt.egress import LinkPolicyEgressGuard
 from seatbelt.pdp import CedarPDP
+from seatbelt.provenance import ProvenanceTracker
 from seatbelt.scope import DeterministicScopeGuard
 from seatbelt.telemetry import AuditSink
 from seatbelt.types import AuthzRequest, Message, SeatbeltConfig, Session, TelemetryRecord
 
 Upstream = Callable[[dict], dict]
+
+_BLOCKED_ACTION_MSG = "I'm not able to complete that action."
 
 
 def _est_tokens(text: str) -> int:
@@ -62,6 +65,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
     budget = TokenWeightedBudgetGovernor()
     egress = LinkPolicyEgressGuard()
     pdp = CedarPDP()
+    provenance = ProvenanceTracker()
     audit = AuditSink()
     sessions: dict[str, Session] = {}
     up = upstream or _default_upstream(cfg.upstream_base_url)
@@ -114,33 +118,66 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
                                        cost_used=session.cost_used))
             return JSONResponse(content=_completion(cfg.scope.deflect_message))
 
+        # --- H2: provenance of this turn (degrades to "untrusted" if NEW untrusted content) ---
+        turn_trust = provenance.turn_trust(session, body.get("messages", []))
+
         # --- upstream model call ---
         resp = up(body)
-        content = (resp.get("choices", [{}])[0].get("message", {}) or {}).get("content", "") or ""
+        message = (resp.get("choices", [{}])[0].get("message", {})) or {}
         usage = resp.get("usage") or {}
-        in_tok = usage.get("prompt_tokens") or _est_tokens(last_user)
-        out_tok = usage.get("completion_tokens") or _est_tokens(content)
+        in_tok = int(usage.get("prompt_tokens") or _est_tokens(last_user))
 
-        # --- H5-lite: output scope check (catch "refused then complied", e.g. code in output) ---
+        # --- H3: tool/action mediation (capability-downgrade) ---
+        tool_calls = message.get("tool_calls") or []
+        if tool_calls:
+            kept: list = []
+            denied: list = []
+            for tc in tool_calls:
+                name = (tc.get("function") or {}).get("name", "") or "unknown"
+                tier = cfg.tool_tiers.get(name, "high")  # unlisted => default-sensitive
+                d = pdp.decide(AuthzRequest(
+                    principal_id=session.id, action="InvokeTool",
+                    resource_type="Seatbelt::Tool", resource_id=name,
+                    context={"provenance_max_trust": turn_trust, "tier": tier,
+                             "user_verified": False, "human_confirmed": False}))
+                if d.effect == "allow":
+                    kept.append(tc)
+                else:
+                    denied.append({"tool": name, "tier": tier, "reasons": d.reasons})
+            budget.record(session, in_tok, _est_tokens(str(tool_calls)), cfg.budget)
+            audit.emit(TelemetryRecord(session.id, session.principal_key, "InvokeTool",
+                       "allow" if not denied else ("partial_deny" if kept else "deny"),
+                       [d["tool"] for d in denied], scope_verdict=verdict,
+                       cost_used=session.cost_used,
+                       extra={"provenance": turn_trust, "denied": denied}))
+            if not kept:
+                return JSONResponse(content=_completion(_BLOCKED_ACTION_MSG))
+            message["tool_calls"] = kept
+            return JSONResponse(content=resp)  # forward upstream resp with denied calls stripped
+
+        # --- content path: H5-lite output scope + H6 egress ---
+        content = message.get("content", "") or ""
+        out_tok = int(usage.get("completion_tokens") or _est_tokens(content))
         out_blocked = False
         if scope_guard.evaluate([Message("user", content)], cfg.scope).verdict == "offscope":
-            content = cfg.scope.deflect_message
-            out_blocked = True
+            content, out_blocked = cfg.scope.deflect_message, True
 
-        # --- H6: egress link/exfil-channel neutralization (fail-closed) ---
+        # provenance-gated egress: an untrusted-driven turn may not render ANY links
+        eg_cfg = replace(cfg.egress, render_links=False) if turn_trust == "untrusted" else cfg.egress
         try:
-            eg = egress.sanitize(content, cfg.egress)
+            eg = egress.sanitize(content, eg_cfg)
             content, blocked = eg.sanitized_text, eg.blocked
         except Exception as e:
             content, blocked = cfg.scope.deflect_message, [f"egress_error: {e}"]
 
         # --- H0: record cost + telemetry ---
-        budget.record(session, int(in_tok), int(out_tok), cfg.budget)
+        budget.record(session, in_tok, out_tok, cfg.budget)
         audit.emit(TelemetryRecord(session.id, session.principal_key, "ReturnAnswer",
                                    "allow", scope_verdict=verdict, cost_used=session.cost_used,
-                                   extra={"egress_blocked": blocked, "output_blocked": out_blocked}))
+                                   extra={"egress_blocked": blocked, "output_blocked": out_blocked,
+                                          "provenance": turn_trust}))
         return JSONResponse(content=_completion(content, {
-            "prompt_tokens": int(in_tok), "completion_tokens": int(out_tok),
-            "total_tokens": int(in_tok) + int(out_tok)}))
+            "prompt_tokens": in_tok, "completion_tokens": out_tok,
+            "total_tokens": in_tok + out_tok}))
 
     return app

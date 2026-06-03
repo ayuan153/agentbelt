@@ -22,6 +22,15 @@ egress:
   allow_domains: ["burritobot.example"]   # live-validated; no stale domains (ForcedLeak lesson)
   render_links: false                     # neutralize the exfil channel
 
+# Tool sensitivity tiers (H3). Unlisted tools default to "high" (default-sensitive).
+# low = read-only; medium = bounded write; high = money/account/irreversible -> needs verification.
+tool_tiers:
+  get_menu: low
+  order_status: low
+  place_order: medium
+  issue_refund: high
+trusted_tool_servers: ["tools.burritobot.internal"]   # whose MCP annotations we'd believe
+
 fail_posture:
   default: closed                # budget/egress fail closed
   scope_check: open_with_alert   # scope classifier errors fail open + alert

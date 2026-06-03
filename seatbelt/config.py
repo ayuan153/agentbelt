@@ -34,4 +34,6 @@ def from_dict(raw: dict) -> SeatbeltConfig:
         egress=egress,
         fail_posture=fail,
         upstream_base_url=raw.get("upstream_base_url", "https://api.openai.com"),
+        tool_tiers=raw.get("tool_tiers", {}),
+        trusted_tool_servers=raw.get("trusted_tool_servers", []),
     )
