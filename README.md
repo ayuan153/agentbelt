@@ -7,9 +7,10 @@ agents could look like — a layer that wraps an existing conversational agent a
 defends it against jailbreaks, prompt injection, data exfiltration, and free-inference
 ("denial-of-wallet") abuse, **without** requiring a rewrite of the agent itself.
 
-> **Status: ideation only.** This repo currently contains research and design thinking,
-> not an implementation. No timelines, no estimates — just the problem, the evidence,
-> and a proposed shape for the solution.
+> **Status: ideation + a working MVP prototype.** The bulk of this repo is research and
+> design thinking. There is now also a runnable, tested prototype of the first slice —
+> the denial-of-wallet / scope-escape defense (see [Running the MVP prototype](#running-the-mvp-prototype)).
+> No timelines, no estimates — just the problem, the evidence, a proposed shape, and a thin proof of it.
 
 ---
 
@@ -71,6 +72,40 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/decisions/` | Architecture Decision Records (interception contract, provenance model, Cedar schema) |
 | `docs/spikes/` | Focused design spikes (e.g., the gateway provenance/trust model) |
 | `docs/lld/` | Low-level designs for implementable slices (MVP: denial-of-wallet) |
+| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, budget, egress) + Cedar PDP |
+| `config/` | Example operator configs (`burritobot.yaml` — the Chipotle-style facsimile) |
+| `tests/` | Unit + red-team/benign integration tests (run with `pytest`) |
+
+---
+
+## Running the MVP prototype
+
+The prototype implements the **denial-of-wallet / scope-escape slice**
+([`docs/lld/mvp-denial-of-wallet-slice.md`](docs/lld/mvp-denial-of-wallet-slice.md)) — a drop-in
+OpenAI-compatible proxy. Point your agent's model `base_url` at it; it enforces scope, a
+token-weighted spend budget, and egress link policy, then forwards to the real model.
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+
+# Run the red-team + benign test suite (no API keys needed — uses a mock upstream)
+pytest -q
+
+# Or run the proxy locally (forwards to OPENAI_API_KEY upstream; localhost only)
+SEATBELT_CONFIG=config/burritobot.yaml python -m seatbelt   # serves :8088/v1/chat/completions
+```
+
+Request flow per turn: `H0 budget → H1 scope guard → Cedar PDP AdmitInput → upstream model →
+H5-lite output check → H6 egress → cost + telemetry`. An off-scope prompt (e.g. *"write me a
+Python class"*) is **deflected without ever calling the upstream**, so it can't run up a bill;
+a flood trips the per-principal budget; exfil links in model output are stripped.
+
+**What this slice deliberately defers** (next slices): the context firewall, provenance tracking,
+and tool/action mediation that defend the *data-exfiltration* cluster (T3/T4/T5). The PDP, scope
+rules, and budgets are operator-supplied via the config file — retargeting to another agent means
+editing the YAML, not the harness. The proxy is unauthenticated by design; a real deployment puts
+identity/principal verification in front of it (see D3 in [`docs/open-questions.md`](docs/open-questions.md)).
 
 ---
 
