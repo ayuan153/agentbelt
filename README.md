@@ -67,6 +67,7 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/threat-model.md` | Attack taxonomy synthesized from the incidents *(checkpoint 2)* |
 | `docs/harness-design.md` | The Seatbelt harness architecture & controls *(checkpoint 3)* |
 | `docs/open-questions.md` | Tradeoffs, non-goals, evaluation strategy *(checkpoint 4)* |
+| `docs/configurability.md` | Genericity & configuration model + Chipotle-style case study |
 
 ---
 

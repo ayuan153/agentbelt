@@ -199,6 +199,13 @@ All three enforce the **same declarative policy** — that's what makes it a reu
 rather than a per-product bolt-on. A minimal integration buckles in input + egress + budget; teams
 add context-firewall and action-mediation as they wire in RAG and tools.
 
+**Resolved stance: gateway-first.** The default deployment is the gateway/proxy, because it needs
+*zero* in-process instrumentation and — since model and tool traffic is HTTP/MCP-mediated — it can
+enforce nearly all controls (real precedents: Bedrock AgentCore Gateway, Kong AI Gateway, Solo.io
+agentgateway). The in-process SDK shim is an optional enhancement for local-only tools or race-free
+provenance. See [`configurability.md`](configurability.md) §7 for the full gateway-only vs.
+in-process tradeoff analysis.
+
 ---
 
 ## 6. Policy sketch (declarative, illustrative)

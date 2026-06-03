@@ -198,6 +198,14 @@ shapes of the decisions.)
 | D7 | **Deployment mode mix** — gateway-only (minimal) vs. gateway + in-process (full) | Constrained by whether you can modify agent code (§4.6) | Both; gateway-only flagged as not covering indirect injection |
 | D8 | **Fail-open vs. fail-closed per surface** — availability vs. safety operating point | Domain-specific harm tradeoff (open-questions §1) | Fail-closed on sensitive actions/egress; fail-open-with-log on low-risk reads |
 
+**Update — most of these are now resolved** as generic, configurable mechanisms in
+[`configurability.md`](configurability.md): D1 scope is a configurable *rules-agent*, D2 sensitive
+actions use a generic resolver (operator override → trusted MCP `ToolAnnotations` → heuristic,
+default-sensitive), D4 defaults to open + cost-capped + graduated friction, **D5 = Cedar**, D6
+defaults to ephemeral derived state, D7 is **gateway-first** (gateway-only meets the goals for
+HTTP/MCP-mediated agents), and D8 is configurable with a graduated default. Only **D3** (which IdP)
+remains a genuine operator choice; the contract stays RFC 8693 token exchange.
+
 ---
 
 ## 5. How we'd know it works (evaluation strategy)
