@@ -62,22 +62,141 @@ won't do, and how we'd know if it works. Read after [`harness-design.md`](harnes
 
 ---
 
-## 4. Open design questions
+## 4. Open design questions — worked through
 
-1. **Where should the Context Firewall's instruction-detection run** — deterministic scanner only,
-   a small dedicated classifier, or the main model with a hardened meta-prompt? Each has a different
-   cost/evasion profile.
-2. **How is "the verified end-user" established** for sensitive-action authZ (R3/R4)? Seatbelt
-   depends on an identity signal it doesn't itself produce — what's the contract with the host app?
-3. **Per-principal budget identity (R5):** what is a "principal" for an anonymous public chatbot?
-   IP? Session? Without a stable principal, denial-of-wallet caps are easy to reset.
-4. **Policy authoring ergonomics.** A policy too hard to write won't be written correctly — the
-   biggest real-world failure mode. How much can be inferred from the agent's tool list + a few
-   declarations vs. hand-authored?
-5. **Stateful vs. stateless guards.** Multi-turn attacks demand session memory in the harness; that
-   adds storage, privacy, and consistency concerns.
-6. **Gateway visibility gap.** In pure reverse-proxy mode, can the harness see enough loop state to
-   enforce H2/H3 well, or is an SDK hook required for the strong controls?
+Each question below carries a status: **✅ Resolved** (a defensible design choice exists today,
+grounded in current tooling/standards) or **⚠️ Needs operator's call** (a genuine product/risk
+decision Seatbelt can't make for you). The decisions in the second bucket are consolidated in
+[§4.7](#47-decisions-that-need-the-operator-flagged).
+
+### 4.1 Where should the Context Firewall's instruction-detection run? — ✅ Resolved
+
+**Answer: all three, layered — but detection is *not* the load-bearing control.** The research is
+blunt: every standalone injection classifier has been broken. Azure **Prompt Shields** and Meta
+**Prompt Guard** were evaded up to ~100% with character-injection / adversarial-ML techniques
+([arXiv:2504.11168](https://arxiv.org/abs/2504.11168)); Prompt Guard fell to a *trivial* "space out
+the characters" trick at 99.8% ([Cisco](https://blogs.cisco.com/security/bypassing-metas-llama-classifier)).
+OWASP keeps prompt injection at #1 and states no single detector suffices.
+
+So Seatbelt should layer cheapest-first and treat detection as attack-surface reduction, not a wall:
+
+| Layer | Mechanism | Latency | Role |
+|-------|-----------|---------|------|
+| 1 | Deterministic: unicode-normalize, strip zero-width/homoglyphs, signature/regex | <5 ms | kill scripted/obfuscated attacks |
+| 2 | Small classifier (Prompt Guard 2 86M/22M, Azure Prompt Shields, Lakera) | ~10–50 ms | catch known injection/jailbreak families |
+| 3 | **Spotlighting / datamarking** (delimit + encode untrusted data) | ~0 ms | indirect-injection: Microsoft reports attack success >50% → **<2%** ([arXiv:2403.14720](https://arxiv.org/abs/2403.14720)) |
+| 5 | **Capability downgrade** (untrusted content can't trigger tools/egress) | — | the actual guarantee |
+
+This vindicates the design: the firewall's **capability-downgrade** (harness-design §3.3) is the
+boundary; the detectors are defense-in-depth in front of it. OpenAI states the same philosophy —
+*"design agents so the impact of manipulation is constrained, even if it succeeds"*
+([OpenAI, Mar 2026](https://openai.com/index/designing-agents-to-resist-prompt-injection)); Microsoft
+pairs Spotlighting + Prompt Shields + capability restriction rather than relying on detection.
+**Don't** run detection as the main model judging itself — same injection can target the judge.
+
+### 4.2 How is "the verified end-user" established for sensitive-action authZ? — ✅ Resolved (pattern) / ⚠️ vendor + sensitivity list
+
+**Answer: the host app must hand Seatbelt a delegated identity token tied to the real end-user, and
+Seatbelt default-denies any sensitive action lacking one.** The settled building block is
+**OAuth 2.0 Token Exchange, [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html)**: the agent
+exchanges its token for a scoped token naming the user as `sub` and the agent as the `act` (actor)
+claim. Effective authority is the *intersection* of user × agent permissions and only ever shrinks
+across hops — structurally the anti-confused-deputy property the Meta incident needed. OWASP
+**LLM06 "Excessive Agency"** prescribes exactly this: least-privilege scoped tokens + human approval
+for impactful actions.
+
+Agent-native "named-agent consent" flows are still **IETF drafts** (`draft-oauth-ai-agents-on-behalf-of-user`,
+`draft-klrc-aiagent-auth`, MCP authorization) — promising but not standardized; don't build on them
+as a hard dependency yet. **The contract:** Seatbelt requires a verified end-user assertion per
+sensitive action; it never treats "the chat session asked nicely" as authorization.
+*Flagged for you:* the IdP/vendor and whether step-up is in-band vs out-of-band, and **which actions
+count as "sensitive"** (a risk decision) — see §4.7.
+
+### 4.3 What is the "principal" for rate-limiting an anonymous public chatbot? — ✅ Resolved (pattern) / ⚠️ friction tolerance
+
+**Answer: there is no single principal — use a composite key with cost-aware budgets.** No standalone
+signal holds: IP collapses under CGNAT/IPv6/VPN, cookies/sessions are trivially reset, visible
+CAPTCHAs are largely solved by 2026. Best practice is layered:
+
+- **Edge:** coarse IP + bot-score limits (Cloudflare/AWS WAF) — stops volumetric floods.
+- **App:** **cost-aware budgeting** — meter token-weighted "cost units" per session, not requests/sec.
+  This is the LLM-specific control that directly answers denial-of-wallet
+  ([cost-aware rate limiting](https://handsonarchitects.com/blog/2025/denial-of-wallet-cost-aware-rate-limiting-part-1/)),
+  and it weights **output tokens** heavily (harness-design §3.7).
+- **Behavioral:** anomaly scoring (all-LLM-fallback traffic, abnormal lengths, rapid sequences).
+- **Optional friction:** invisible challenge (Turnstile / reCAPTCHA v3 scoring) before login.
+
+So Seatbelt's "principal" = `composite(IP, session token, optional fingerprint)` carrying a
+cost-unit budget. *Flagged for you:* how much friction (challenge/login) you'll impose vs. abuse you'll
+tolerate — pure UX/business tradeoff (§4.7).
+
+### 4.4 Policy authoring: how much inferred vs. hand-authored? — ✅ Resolved (pattern) / ⚠️ scope + engine
+
+**Answer: hybrid — infer the mechanics from the tool schema, hand-author the intent.** The tool
+schema *is* the resource model: policy-as-code engines map tool names → actions and tool params →
+context. **AWS Cedar** (default-deny, forbid-wins, formally verifiable, fast) is purpose-built for
+the `permit(principal, action, resource)` shape that tool-call mediation needs; **OPA/Rego** is more
+expressive when you need data joins. Amazon **Bedrock AgentCore** already enforces Cedar per
+tool-call at its gateway and can even *generate* Cedar from natural language, validated against the
+tool schema ([AWS](https://aws.amazon.com/blogs/machine-learning/secure-ai-agents-with-policy-in-amazon-bedrock-agentcore/));
+Microsoft's Agent Governance Toolkit runs OPA/Rego **and** Cedar.
+
+- **Inferable (auto-scaffold):** the action list, argument validation, and a default sensitivity
+  guess (read-only = low; write/external = high).
+- **Irreducibly hand-authored:** the **scope** (what the bot is *for*), data-class sensitivity, which
+  actions demand human confirmation, and the egress allowlist. These encode business intent.
+
+A too-hard-to-write policy *is* the real-world failure mode, so: generate a draft from the schema,
+make the human edit only the intent fields. *Flagged for you:* the scope definition itself and the
+engine choice (§4.7).
+
+### 4.5 Stateful vs. stateless guards? — ✅ Resolved: stateful is required
+
+**Answer: session state is mandatory, or you miss the most effective modern attack class.**
+**Crescendo** multi-turn jailbreaks escalate across individually-benign turns and hit ~97–100%
+success while every *stateless* per-turn filter passes them
+([arXiv:2404.01833](https://arxiv.org/abs/2404.01833)). Most production guardrails are stateless —
+that's the gap. **DeepContext** (Feb 2026) tracks intent-drift across turns and scores F1≈0.84 vs.
+~0.67 for per-turn Prompt Guard 2 on multi-turn benchmarks, at sub-20 ms
+([arXiv:2602.16935](https://arxiv.org/abs/2602.16935)). Minimum viable design: a per-session rolling
+**risk accumulator + sliding-window intent score** feeding the Input Guard. *Flagged for you:* the
+**data-retention/privacy policy** for that session state (what's stored, for how long) — a
+privacy/compliance call (§4.7).
+
+### 4.6 Gateway visibility gap — proxy vs. SDK? — ✅ Resolved: use both, one shared PDP
+
+**Answer: the strong controls require an in-process hook; the gateway covers what it can't.** This is
+the settled PDP/PEP (decision-point / enforcement-point) split applied as defense-in-depth:
+
+| Placement | Can enforce | Blind to |
+|-----------|-------------|----------|
+| **Gateway / proxy PEP** | HTTP auth/headers/IP, rate & cost limits, payload size, prompt/response content, HTTP tool routing, cross-session spend | internal reasoning, in-memory context, **which** reasoning branch triggered a call, in-process (non-HTTP) tool calls |
+| **In-process SDK PEP** | full loop state, plan/reasoning, **tool args + provenance before execution**, context-aware decisions, pre-exec budget checks | cross-service enforcement, infra controls (TLS/DDoS/IP) |
+
+Seatbelt's two load-bearing controls — **provenance tagging (H2)** and the **provenance-gated action
+mediation (H3)** that asks *"did this tool call originate from untrusted content?"* — are only
+answerable **in-process**, because a network gateway can't see the causal link. So: in-process PEP
+for H2/H3, gateway PEP for auth/rate/egress/audit, both consulting **one shared PDP** (Cedar/OPA).
+Real precedents: AWS AgentCore (Cedar at gateway), AWS Rex (in-process Cedar SDK intercepting every
+op), NeMo Guardrails (in-process rails). Pure reverse-proxy mode is a *valid minimal* deployment but
+**cannot** deliver the indirect-injection guarantee — that limitation should be stated honestly.
+
+### 4.7 Decisions that need the operator (flagged)
+
+These are genuine product/risk/deployment calls — Seatbelt provides the mechanism, you provide the
+intent. (Per project scope, specific vendor *selection* stays out of this ideation; these are the
+shapes of the decisions.)
+
+| # | Decision | Why it's yours, not mine | Default if unspecified |
+|---|----------|--------------------------|------------------------|
+| D1 | **Scope definition** — what the agent is *for* and the off-purpose line | Encodes business intent; the #1 real-world failure mode (§4.4). "Help me write a complaint letter" — in or out? | Deny-by-default to a narrow allowlist of declared intents |
+| D2 | **Sensitive-action list** — which tools require step-up auth / human confirm / dual control | A risk-appetite call tied to blast radius (refund $ caps, account changes) (§4.2) | Any write/external/irreversible action → require verified user + confirm |
+| D3 | **Identity source & step-up UX** — which IdP, in-band vs out-of-band step-up | Depends on your existing auth stack (§4.2) | RFC 8693 token-exchange contract; deny sensitive actions without a user token |
+| D4 | **Anonymous-abuse tolerance** — challenge/login friction vs. openness, per-principal budget caps | Pure UX/business tradeoff (§4.3) | Composite principal + conservative cost-unit budget + invisible challenge |
+| D5 | **Policy engine** — Cedar vs. OPA/Rego | Depends on existing investment & policy complexity (§4.4) | Cedar (fits tool-call authZ, verifiable) |
+| D6 | **Session-state retention** — what guard state is stored, how long | Privacy/compliance decision (§4.5) | Ephemeral rolling risk score; no raw transcript retention beyond session |
+| D7 | **Deployment mode mix** — gateway-only (minimal) vs. gateway + in-process (full) | Constrained by whether you can modify agent code (§4.6) | Both; gateway-only flagged as not covering indirect injection |
+| D8 | **Fail-open vs. fail-closed per surface** — availability vs. safety operating point | Domain-specific harm tradeoff (open-questions §1) | Fail-closed on sensitive actions/egress; fail-open-with-log on low-risk reads |
 
 ---
 
