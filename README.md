@@ -68,6 +68,9 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/harness-design.md` | The Seatbelt harness architecture & controls *(checkpoint 3)* |
 | `docs/open-questions.md` | Tradeoffs, non-goals, evaluation strategy *(checkpoint 4)* |
 | `docs/configurability.md` | Genericity & configuration model + Chipotle-style case study |
+| `docs/decisions/` | Architecture Decision Records (interception contract, provenance model, Cedar schema) |
+| `docs/spikes/` | Focused design spikes (e.g., the gateway provenance/trust model) |
+| `docs/lld/` | Low-level designs for implementable slices (MVP: denial-of-wallet) |
 
 ---
 
