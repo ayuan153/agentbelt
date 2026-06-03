@@ -79,6 +79,7 @@ class RiskConfig:
     offscope_weight: float = 0.5
     unknown_weight: float = 0.15
     cue_weight: float = 0.4     # per escalation cue found in the turn
+    scorer: str = "crescendo"   # "crescendo" (keyword) | "semantic" (charter drift)
 
 
 @dataclass

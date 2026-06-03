@@ -270,3 +270,44 @@ def test_untrusted_server_annotation_is_ignored_defaults_sensitive():
     r = _ask_full(client, _POISONED, tools=tools, session="ann2")
     # annotation from untrusted server ignored -> default-sensitive (high) -> blocked
     assert _content(r) == _BLOCKED_ACTION_MSG
+
+
+# --- Pluggable semantic scorer + MCP discovery driving tiers ---
+
+from seatbelt.app import create_app  # noqa: E402
+from seatbelt.config import from_dict  # noqa: E402
+
+
+def test_semantic_scorer_selection_changes_behavior():
+    # A single clearly off-charter turn: admitted under default (crescendo), deflected under semantic.
+    off = [{"role": "user", "content": "explain quantum chromodynamics in detail"}]
+    default_c = TestClient(create_app(from_dict(BASE_CFG), upstream=MockUpstream(content="ok")))
+    r_default = default_c.post("/v1/chat/completions", headers={"X-Seatbelt-Session": "d"},
+                               json={"model": "g", "messages": off})
+    assert _content(r_default) != BASE_CFG["scope"]["deflect_message"]  # crescendo: one-off admitted
+
+    sem_cfg = {**BASE_CFG, "risk": {"scorer": "semantic", "threshold": 0.9, "decay": 0.8}}
+    sem_c = TestClient(create_app(from_dict(sem_cfg), upstream=MockUpstream(content="ok")))
+    r_sem = sem_c.post("/v1/chat/completions", headers={"X-Seatbelt-Session": "s"},
+                       json={"model": "g", "messages": off})
+    assert _content(r_sem) == BASE_CFG["scope"]["deflect_message"]  # semantic: high charter-drift -> deflect
+
+
+def test_mcp_discovery_upgrades_tier_to_block():
+    # 'get_report' looks read-only by name (heuristic -> low) but the TRUSTED server's manifest
+    # annotates it destructive -> discovery upgrades it to high -> blocked.
+    def fake_fetch(server):
+        return [{"name": "get_report", "annotations": {"destructiveHint": True}}]
+
+    cfg = {**BASE_CFG, "trusted_tool_servers": ["https://trusted"]}
+    tools = [{"type": "function", "function": {"name": "get_report"}}]  # request carries no annotations
+    msgs = [{"role": "user", "content": "help with my order"}]
+
+    with_disc = TestClient(create_app(from_dict(cfg), upstream=ToolUpstream("get_report"), mcp_fetch=fake_fetch))
+    r1 = _ask_full(with_disc, msgs, tools=tools, session="disc1")
+    assert _content(r1) == _BLOCKED_ACTION_MSG  # discovered destructive annotation -> high -> blocked
+
+    without_disc = TestClient(create_app(from_dict(cfg), upstream=ToolUpstream("get_report")))
+    r2 = _ask_full(without_disc, msgs, tools=tools, session="disc2")
+    tcs = r2.json()["choices"][0]["message"].get("tool_calls")
+    assert tcs and tcs[0]["function"]["name"] == "get_report"  # heuristic 'get_' -> low -> allowed

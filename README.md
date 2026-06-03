@@ -72,7 +72,7 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/decisions/` | Architecture Decision Records (interception contract, provenance model, Cedar schema) |
 | `docs/spikes/` | Focused design spikes (e.g., the gateway provenance/trust model) |
 | `docs/lld/` | Low-level designs for implementable slices (MVP: denial-of-wallet) |
-| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, multi-turn risk, budget, egress, provenance, Cedar PDP + annotation-driven tool mediation) |
+| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, multi-turn risk, budget, egress, provenance, Cedar PDP + annotation-driven tool mediation), MCP annotation discovery, and an optional in-process shim |
 | `config/` | Example operator configs (`burritobot.yaml` — the Chipotle-style facsimile) |
 | `tests/` | Unit + red-team/benign integration tests (run with `pytest`) |
 

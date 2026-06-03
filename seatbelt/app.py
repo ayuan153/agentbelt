@@ -22,9 +22,11 @@ from fastapi.responses import JSONResponse
 
 from seatbelt.budget import TokenWeightedBudgetGovernor
 from seatbelt.egress import LinkPolicyEgressGuard
+from seatbelt.mcp_discovery import discover_annotations
 from seatbelt.pdp import CedarPDP
 from seatbelt.provenance import ProvenanceTracker
 from seatbelt.risk import CrescendoRiskScorer
+from seatbelt.risk_semantic import SemanticDriftRiskScorer
 from seatbelt.scope import DeterministicScopeGuard
 from seatbelt.telemetry import AuditSink
 from seatbelt.tooltier import resolve_tier
@@ -61,14 +63,22 @@ def _default_upstream(base_url: str) -> Upstream:
     return call
 
 
-def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI:
+def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=None) -> FastAPI:
     app = FastAPI(title="Seatbelt", version="0.1.0")
     scope_guard = DeterministicScopeGuard()
     budget = TokenWeightedBudgetGovernor()
     egress = LinkPolicyEgressGuard()
     pdp = CedarPDP()
     provenance = ProvenanceTracker()
-    risk = CrescendoRiskScorer()
+    # Pluggable risk scorer (ADR-0004): keyword Crescendo (default) or charter-drift proxy.
+    if cfg.risk.scorer == "semantic":
+        reference = cfg.scope.charter + " " + " ".join(
+            e.get("text", "") for e in cfg.scope.examples if e.get("label") == "onscope")
+        risk = SemanticDriftRiskScorer(reference)
+    else:
+        risk = CrescendoRiskScorer()
+    # Optional MCP annotation discovery from trusted servers (no startup network unless fetch given).
+    registry = discover_annotations(cfg.trusted_tool_servers, fetch=mcp_fetch) if mcp_fetch else {}
     audit = AuditSink()
     sessions: dict[str, Session] = {}
     up = upstream or _default_upstream(cfg.upstream_base_url)
@@ -149,6 +159,8 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
             for tc in tool_calls:
                 name = (tc.get("function") or {}).get("name", "") or "unknown"
                 ann, srv = tool_meta.get(name, (None, None))
+                if ann is None and name in registry:  # fall back to discovered annotations
+                    ann, srv = registry[name]
                 tier = resolve_tier(name, cfg.tool_tiers, cfg.trusted_tool_servers,
                                     annotations=ann, server=srv)
                 d = pdp.decide(AuthzRequest(

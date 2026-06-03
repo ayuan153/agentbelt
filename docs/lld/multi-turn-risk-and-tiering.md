@@ -55,8 +55,12 @@ lookup. The resolved tier feeds the Cedar `InvokeTool` decision (capability-down
 ## Limitations
 
 - Risk scoring is heuristic (keyword + decay) — a floor, swappable for a learned model via the
-  `RiskScorer` interface (ADR-0004).
-- The `x_mcp_server`/`annotations` fields on tool defs are a prototype convention; full MCP
-  discovery (the proxy fetching server tool manifests) is the next step for tiering.
+  `RiskScorer` interface (ADR-0004). An alternative **semantic charter-drift** scorer is now
+  shipped (`seatbelt/risk_semantic.py`, `risk.scorer: semantic`) as a deterministic proxy for a
+  learned model.
+- The `x_mcp_server`/`annotations` fields on tool defs are a prototype convention. **MCP
+  server-manifest discovery is now implemented** (`seatbelt/mcp_discovery.py`,
+  `discover_annotations`): `create_app(..., mcp_fetch=...)` fetches `tools/list` from trusted
+  servers and the proxy falls back to those annotations when a request omits them.
 - Tier resolution trusts operator config for `trusted_tool_servers`; annotations are never trusted
-  from unlisted servers.
+  from unlisted servers (enforced in both the request and discovery paths).

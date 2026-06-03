@@ -83,7 +83,10 @@ Provenance state lives in a **shared session store** keyed by session ID
   chain-of-thought. "Justification" is **approximated** by content-trust accounting
   (what new content appeared), not by tracing which tokens actually influenced the
   model's decision. Exact causal provenance requires the optional in-process shim
-  described in [harness-design.md](../harness-design.md).
+  described in [harness-design.md](../harness-design.md). **This shim is now
+  implemented** ([`../lld/in-process-shim.md`](../lld/in-process-shim.md)): it narrows
+  the gap to agent-reported *per-decision* provenance, though it remains cooperative
+  (not automatic taint propagation).
 - **Heuristic false positives**: the conservative embedded-content heuristic may
   over-classify legitimate user text as UNTRUSTED, causing unnecessary escalations.
 - **Hash collisions**: content-hash keying assumes collision-free hashes (SHA-256);

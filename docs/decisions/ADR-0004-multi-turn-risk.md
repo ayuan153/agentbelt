@@ -50,7 +50,10 @@ operators tune per risk appetite.
 
 - **Heuristic, not semantic.** A keyword/decay model will miss paraphrased escalation and can be
   evaded; it is a *floor*, not a guarantee. The pluggable interface allows swapping in a learned
-  scorer (e.g. a DeepContext-style intent-drift model) later.
+  scorer (e.g. a DeepContext-style intent-drift model) later. An alternative **semantic charter-drift
+  scorer** is already shipped (`seatbelt/risk_semantic.py`, selectable via `risk.scorer: semantic`) —
+  a deterministic lexical-drift *proxy* for that learned model, demonstrating the interface is
+  pluggable. See [`../lld/multi-turn-risk-and-tiering.md`](../lld/multi-turn-risk-and-tiering.md).
 - **Session identity required.** Accuracy depends on a stable principal/session (see D3/D4 in
   [`../open-questions.md`](../open-questions.md)); an attacker who resets the session resets the score.
 - **Tuning tradeoff.** Too low a threshold over-blocks long benign conversations; too high lets slow

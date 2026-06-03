@@ -117,8 +117,9 @@ annotations) where it's *safe* to, and fails safe everywhere else.
 
 > **Implemented** in `seatbelt/tooltier.py` (`resolve_tier`) and wired into the proxy's tool
 > mediation. The prototype reads annotations from each request tool def via a `function.annotations`
-> + `function.x_mcp_server` convention (what the MCP proxy would discover); full MCP server-manifest
-> discovery is the next increment. See [`lld/multi-turn-risk-and-tiering.md`](lld/multi-turn-risk-and-tiering.md).
+> + `function.x_mcp_server` convention, **and** can discover them directly from trusted MCP servers
+> (`seatbelt/mcp_discovery.py`; `create_app(..., mcp_fetch=...)` fetches `tools/list`). See
+> [`lld/multi-turn-risk-and-tiering.md`](lld/multi-turn-risk-and-tiering.md).
 
 ---
 
