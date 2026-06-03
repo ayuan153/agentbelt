@@ -115,6 +115,11 @@ when { resource.tier == "high" && !(context.user_verified && context.human_confi
 This is generic (works for any builder's tools), leans on a real interoperability standard (MCP
 annotations) where it's *safe* to, and fails safe everywhere else.
 
+> **Implemented** in `seatbelt/tooltier.py` (`resolve_tier`) and wired into the proxy's tool
+> mediation. The prototype reads annotations from each request tool def via a `function.annotations`
+> + `function.x_mcp_server` convention (what the MCP proxy would discover); full MCP server-manifest
+> discovery is the next increment. See [`lld/multi-turn-risk-and-tiering.md`](lld/multi-turn-risk-and-tiering.md).
+
 ---
 
 ## 4. Configuration is the whole interface

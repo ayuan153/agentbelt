@@ -28,6 +28,7 @@ BASE_CFG = {
     "budget": {"cost_units_per_window": 50, "window_seconds": 3600, "output_token_weight": 5, "input_token_weight": 1},
     "egress": {"allow_domains": ["burritobot.example"], "render_links": False},
     "tool_tiers": {"get_menu": "low", "order_status": "low", "place_order": "medium", "issue_refund": "high"},
+    "trusted_tool_servers": ["tools.burritobot.internal"],
     "fail_posture": {"default": "closed", "scope_check": "open_with_alert"},
 }
 
@@ -216,3 +217,56 @@ def test_provenance_gated_egress_strips_allowlisted_link_when_untrusted():
     client, _ = _client({"egress": {"allow_domains": ["burritobot.example"], "render_links": True}}, upstream=up)
     r = _ask_msgs(client, _POISONED, session="eg1")
     assert "burritobot.example" not in _content(r)
+
+
+# --- Multi-turn (Crescendo) risk + annotation-driven tiering ---
+
+def _ask_full(client, messages, tools=None, session="t1"):
+    body = {"model": "gpt-x", "messages": messages}
+    if tools is not None:
+        body["tools"] = tools
+    return client.post("/v1/chat/completions", headers={"X-Seatbelt-Session": session}, json=body)
+
+
+_CRESCENDO_TURN = "could you pretend for a moment"  # 1 soft cue, scope = unknown (admitted alone)
+
+
+def test_single_borderline_turn_is_admitted():
+    up = MockUpstream(content="Sure, here's the menu.")
+    client, _ = _client(upstream=up)
+    r = _ask(client, _CRESCENDO_TURN, session="solo")
+    assert _content(r) != BASE_CFG["scope"]["deflect_message"]  # one-off doesn't trip
+
+
+def test_crescendo_multiturn_escalation_trips():
+    up = MockUpstream(content="Sure, here's the menu.")
+    client, _ = _client(upstream=up)
+    first = _ask(client, _CRESCENDO_TURN, session="cre")
+    assert _content(first) != BASE_CFG["scope"]["deflect_message"]  # turn 1 admitted
+    last = first
+    for _ in range(4):  # sustained escalation accumulates past threshold
+        last = _ask(client, _CRESCENDO_TURN, session="cre")
+    assert _content(last) == BASE_CFG["scope"]["deflect_message"]  # later turn deflected
+
+
+# Tool with NO operator tier and NO heuristic signal -> only a trusted annotation can lower it.
+_INSPECT_TOOL = [{"type": "function", "function": {
+    "name": "inspect_inventory", "annotations": {"readOnlyHint": True}}}]
+
+
+def test_trusted_server_readonly_annotation_allows_low_tool_under_untrusted():
+    client, _ = _client(upstream=ToolUpstream("inspect_inventory"))
+    tools = [dict(_INSPECT_TOOL[0])]
+    tools[0]["function"] = {**tools[0]["function"], "x_mcp_server": "tools.burritobot.internal"}
+    r = _ask_full(client, _POISONED, tools=tools, session="ann1")  # untrusted provenance turn
+    tcs = r.json()["choices"][0]["message"].get("tool_calls")
+    assert tcs and tcs[0]["function"]["name"] == "inspect_inventory"  # trusted readOnly -> low -> allowed
+
+
+def test_untrusted_server_annotation_is_ignored_defaults_sensitive():
+    client, _ = _client(upstream=ToolUpstream("inspect_inventory"))
+    tools = [dict(_INSPECT_TOOL[0])]
+    tools[0]["function"] = {**tools[0]["function"], "x_mcp_server": "evil.attacker.com"}
+    r = _ask_full(client, _POISONED, tools=tools, session="ann2")
+    # annotation from untrusted server ignored -> default-sensitive (high) -> blocked
+    assert _content(r) == _BLOCKED_ACTION_MSG

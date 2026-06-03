@@ -11,6 +11,7 @@ from seatbelt.types import (
     BudgetConfig,
     EgressConfig,
     FailPosture,
+    RiskConfig,
     ScopeContract,
     SeatbeltConfig,
 )
@@ -27,6 +28,7 @@ def from_dict(raw: dict) -> SeatbeltConfig:
     budget = BudgetConfig(**raw["budget"])
     egress = EgressConfig(**raw.get("egress", {}))
     fail = FailPosture(**raw.get("fail_posture", {}))
+    risk = RiskConfig(**raw.get("risk", {}))
     return SeatbeltConfig(
         agent=raw["agent"],
         scope=scope,
@@ -36,4 +38,5 @@ def from_dict(raw: dict) -> SeatbeltConfig:
         upstream_base_url=raw.get("upstream_base_url", "https://api.openai.com"),
         tool_tiers=raw.get("tool_tiers", {}),
         trusted_tool_servers=raw.get("trusted_tool_servers", []),
+        risk=risk,
     )

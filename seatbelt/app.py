@@ -24,8 +24,10 @@ from seatbelt.budget import TokenWeightedBudgetGovernor
 from seatbelt.egress import LinkPolicyEgressGuard
 from seatbelt.pdp import CedarPDP
 from seatbelt.provenance import ProvenanceTracker
+from seatbelt.risk import CrescendoRiskScorer
 from seatbelt.scope import DeterministicScopeGuard
 from seatbelt.telemetry import AuditSink
+from seatbelt.tooltier import resolve_tier
 from seatbelt.types import AuthzRequest, Message, SeatbeltConfig, Session, TelemetryRecord
 
 Upstream = Callable[[dict], dict]
@@ -66,6 +68,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
     egress = LinkPolicyEgressGuard()
     pdp = CedarPDP()
     provenance = ProvenanceTracker()
+    risk = CrescendoRiskScorer()
     audit = AuditSink()
     sessions: dict[str, Session] = {}
     up = upstream or _default_upstream(cfg.upstream_base_url)
@@ -96,26 +99,31 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
 
         # --- H1: scope guard (fail-open-with-alert on error) ---
         try:
-            sr = scope_guard.evaluate(msgs, cfg.scope)
-            verdict = sr.verdict
+            verdict = scope_guard.evaluate(msgs, cfg.scope).verdict
         except Exception as e:  # graduated fail posture: scope_check = open_with_alert
             verdict = "unknown"
             audit.emit(TelemetryRecord(session.id, session.principal_key, "ScopeGuard",
                                        "error_open", [f"scope_error: {e}"], scope_verdict="unknown"))
 
+        # --- H1+: multi-turn (Crescendo) risk -> escalate a borderline turn to a deflect ---
+        rr = risk.score_turn(session, last_user, verdict, cfg.risk)
+        effective_verdict = "offscope" if rr.tripped else verdict
+
         # --- Cedar PDP: AdmitInput ---
         decision = pdp.decide(AuthzRequest(
             principal_id=session.id, action="AdmitInput",
             resource_type="Seatbelt::Answer", resource_id="answer",
-            context={"scope_verdict": verdict, "cost_used": int(session.cost_used),
+            context={"scope_verdict": effective_verdict, "cost_used": int(session.cost_used),
                      "budget_remaining": int(br.budget_remaining)},
         ))
         if decision.effect == "deny":
-            # Confident offscope -> deflect WITHOUT calling upstream (saves spend: defeats T1/T7).
+            # Confident offscope (or risk-tripped) -> deflect WITHOUT calling upstream.
+            reasons = decision.reasons + ([f"multiturn_risk:{rr.score:.2f}"] if rr.tripped else [])
             budget.record(session, _est_tokens(last_user), _est_tokens(cfg.scope.deflect_message), cfg.budget)
             audit.emit(TelemetryRecord(session.id, session.principal_key, "AdmitInput",
-                                       "deflect", decision.reasons, scope_verdict=verdict,
-                                       cost_used=session.cost_used))
+                                       "deflect", reasons, scope_verdict=effective_verdict,
+                                       cost_used=session.cost_used,
+                                       extra={"risk_score": round(rr.score, 3), "risk_tripped": rr.tripped}))
             return JSONResponse(content=_completion(cfg.scope.deflect_message))
 
         # --- H2: provenance of this turn (degrades to "untrusted" if NEW untrusted content) ---
@@ -130,11 +138,19 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None) -> FastAPI
         # --- H3: tool/action mediation (capability-downgrade) ---
         tool_calls = message.get("tool_calls") or []
         if tool_calls:
+            # tool metadata (MCP annotations + server) the host/MCP-proxy attached to tool defs
+            tool_meta = {}
+            for t in body.get("tools", []) or []:
+                fn = t.get("function") or {}
+                if fn.get("name"):
+                    tool_meta[fn["name"]] = (fn.get("annotations"), fn.get("x_mcp_server"))
             kept: list = []
             denied: list = []
             for tc in tool_calls:
                 name = (tc.get("function") or {}).get("name", "") or "unknown"
-                tier = cfg.tool_tiers.get(name, "high")  # unlisted => default-sensitive
+                ann, srv = tool_meta.get(name, (None, None))
+                tier = resolve_tier(name, cfg.tool_tiers, cfg.trusted_tool_servers,
+                                    annotations=ann, server=srv)
                 d = pdp.decide(AuthzRequest(
                     principal_id=session.id, action="InvokeTool",
                     resource_type="Seatbelt::Tool", resource_id=name,

@@ -35,4 +35,9 @@ fail_posture:
   default: closed                # budget/egress fail closed
   scope_check: open_with_alert   # scope classifier errors fail open + alert
 
+risk:                            # multi-turn (Crescendo) session-risk scoring
+  threshold: 1.0                 # deflect once accumulated escalation crosses this
+  decay: 0.8                     # one-off borderline turns fade; sustained pressure accumulates
+  cue_weight: 0.4
+
 upstream_base_url: "https://api.openai.com"

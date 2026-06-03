@@ -72,6 +72,16 @@ class FailPosture:
 
 
 @dataclass
+class RiskConfig:
+    """Multi-turn (Crescendo) session-risk scoring knobs."""
+    threshold: float = 1.0      # tripped when accumulated score >= threshold
+    decay: float = 0.8          # prior score multiplier each turn (one-offs fade)
+    offscope_weight: float = 0.5
+    unknown_weight: float = 0.15
+    cue_weight: float = 0.4     # per escalation cue found in the turn
+
+
+@dataclass
 class SeatbeltConfig:
     agent: str
     scope: ScopeContract
@@ -82,6 +92,7 @@ class SeatbeltConfig:
     # tool sensitivity tiers (H3): tool name -> "low" | "medium" | "high"; unlisted => default-sensitive
     tool_tiers: dict = field(default_factory=dict)
     trusted_tool_servers: list[str] = field(default_factory=list)
+    risk: "RiskConfig" = field(default_factory=lambda: RiskConfig())
 
 
 # --- guard results -----------------------------------------------------------
@@ -91,6 +102,13 @@ class SeatbeltConfig:
 class ScopeResult:
     verdict: ScopeVerdict
     matched: list[str] = field(default_factory=list)  # hard_deny categories / reasons hit
+
+
+@dataclass
+class RiskResult:
+    score: float
+    tripped: bool
+    reasons: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -150,6 +168,10 @@ class TelemetryRecord:
 
 class ScopeGuard(Protocol):
     def evaluate(self, messages: list[Message], scope: ScopeContract) -> ScopeResult: ...
+
+
+class RiskScorer(Protocol):
+    def score_turn(self, session: Session, user_text: str, scope_verdict: str, cfg: RiskConfig) -> RiskResult: ...
 
 
 class BudgetGovernor(Protocol):

@@ -72,7 +72,7 @@ Full design lives in [`docs/`](docs/) (added across checkpoints).
 | `docs/decisions/` | Architecture Decision Records (interception contract, provenance model, Cedar schema) |
 | `docs/spikes/` | Focused design spikes (e.g., the gateway provenance/trust model) |
 | `docs/lld/` | Low-level designs for implementable slices (MVP: denial-of-wallet) |
-| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, budget, egress, provenance, Cedar PDP + tool mediation) |
+| `seatbelt/` | **MVP prototype** — OpenAI-compatible proxy + guards (scope, multi-turn risk, budget, egress, provenance, Cedar PDP + annotation-driven tool mediation) |
 | `config/` | Example operator configs (`burritobot.yaml` — the Chipotle-style facsimile) |
 | `tests/` | Unit + red-team/benign integration tests (run with `pytest`) |
 
@@ -99,7 +99,10 @@ SEATBELT_CONFIG=config/burritobot.yaml python -m seatbelt   # serves :8088/v1/ch
 Request flow per turn: `H0 budget → H1 scope guard → Cedar PDP AdmitInput → upstream model →
 H5-lite output check → H6 egress → cost + telemetry`. An off-scope prompt (e.g. *"write me a
 Python class"*) is **deflected without ever calling the upstream**, so it can't run up a bill;
-a flood trips the per-principal budget; exfil links in model output are stripped.
+a flood trips the per-principal budget; exfil links in model output are stripped. A **multi-turn
+(Crescendo) risk score** also deflects sessions that escalate gradually across turns, and tool
+calls are tiered by a generic resolver (operator override → trusted-server MCP annotations →
+heuristic → default-sensitive).
 
 **What this slice deliberately defers** (next slices): the context firewall, provenance tracking,
 and tool/action mediation that defend the *data-exfiltration* cluster (T3/T4/T5) — **now also
