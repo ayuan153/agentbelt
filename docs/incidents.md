@@ -14,6 +14,16 @@ jailbroken, prompt-injected, or otherwise manipulated. We group them by the atta
 > could not fully verify are marked **[UNVERIFIED]**. Some 2026-dated incidents are recent and
 > reporting details (exact dates, outlets) vary between sources — these are flagged inline.
 
+> ⚠️ **Verification status (read before citing).** The pre-2026 incidents are well-documented and
+> independently reportable: **Chevrolet "$1 truck" (Dec 2023), DPD rogue bot (Jan 2024), Samsung
+> code-paste leak (2023), Bing "Sydney" prompt leak (2023), Air Canada liability ruling (2024),
+> EchoLeak / M365 Copilot CVE-2025-32711, and the Slack AI exfiltration disclosure (2024)**. The
+> **2026-dated entries** here (Meta Instagram takeover, Chipotle "free Claude Code", Zoom code-gen,
+> "Operation Bizarre Bazaar", Gemini calendar injection) are **reported but NOT independently
+> verified for this repo** — treat them as illustrative of the *pattern*, not as established fact,
+> and re-confirm sources before citing publicly. The harness design does not depend on any single
+> incident.
+
 ---
 
 ## At-a-glance
