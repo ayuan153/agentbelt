@@ -9,7 +9,7 @@
 Prompt-injection attacks (threats T2, T4 in the [threat model](../threat-model.md))
 exploit the fact that LLMs treat all input tokens with equal authority. To enforce the
 capability-downgrade invariant — actions must only be authorized when justified by
-operator or user intent, not by injected content — Seatbelt needs a model for tracking
+operator or user intent, not by injected content — Agentbelt needs a model for tracking
 the **provenance** (trust origin) of every piece of context the model consumes.
 
 The detailed exploration of design options lives in
@@ -22,7 +22,7 @@ accepted decision.
 
 | Tier | Source | Examples |
 |------|--------|----------|
-| **TRUSTED** | Operator / developer instructions; Seatbelt policy | `role=system`, `role=developer` messages |
+| **TRUSTED** | Operator / developer instructions; Agentbelt policy | `role=system`, `role=developer` messages |
 | **USER** | End-user's direct conversational turn (semi-trusted) | `role=user` messages typed by the human |
 | **UNTRUSTED** | Tool/function results, RAG/retrieved docs, ingested external content | `role=tool` messages; email/calendar/web/file content |
 
@@ -57,7 +57,7 @@ This invariant is enforced by the Cedar policy layer (see
 ### Stateless-gateway solution
 
 Provenance state lives in a **shared session store** keyed by session ID
-(`X-Seatbelt-Session` per [ADR-0001](ADR-0001-interception-contract.md)):
+(`X-Agentbelt-Session` per [ADR-0001](ADR-0001-interception-contract.md)):
 
 - Map: `content-hash → { trust_tier, new_untrusted_this_turn: bool }`
 - Re-sent messages are matched by hash for cheap, consistent re-derivation across

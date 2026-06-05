@@ -4,7 +4,7 @@ Two augmentations to the pluggable proxy, both shipped and tested. Neither requi
 change. Realizes [ADR-0004](../decisions/ADR-0004-multi-turn-risk.md) and the tier precedence in
 [`../configurability.md`](../configurability.md) §3 / [ADR-0003](../decisions/ADR-0003-cedar-policy-schema.md).
 
-## 1. Multi-turn (Crescendo) risk scoring — `seatbelt/risk.py`
+## 1. Multi-turn (Crescendo) risk scoring — `agentbelt/risk.py`
 
 Augments the input guard (H1) with session-level state to catch gradual escalation.
 
@@ -26,7 +26,7 @@ So a tripped session reuses the existing deflection path; `risk_score`/`tripped`
 Worked numerics (defaults `decay=0.8, unknown_weight=0.15, cue_weight=0.4`), one cue/turn,
 unknown scope: `0.55 → 0.99 → 1.34(trip)`. A single such turn (`0.55`) is admitted.
 
-## 2. Annotation-driven tier resolution — `seatbelt/tooltier.py`
+## 2. Annotation-driven tier resolution — `agentbelt/tooltier.py`
 
 Makes H3 tool-sensitivity tiering generic. `resolve_tier(name, tool_tiers, trusted_servers,
 annotations, server)` precedence (first match wins):
@@ -56,10 +56,10 @@ lookup. The resolved tier feeds the Cedar `InvokeTool` decision (capability-down
 
 - Risk scoring is heuristic (keyword + decay) — a floor, swappable for a learned model via the
   `RiskScorer` interface (ADR-0004). An alternative **semantic charter-drift** scorer is now
-  shipped (`seatbelt/risk_semantic.py`, `risk.scorer: semantic`) as a deterministic proxy for a
+  shipped (`agentbelt/risk_semantic.py`, `risk.scorer: semantic`) as a deterministic proxy for a
   learned model.
 - The `x_mcp_server`/`annotations` fields on tool defs are a prototype convention. **MCP
-  server-manifest discovery is now implemented** (`seatbelt/mcp_discovery.py`,
+  server-manifest discovery is now implemented** (`agentbelt/mcp_discovery.py`,
   `discover_annotations`): `create_app(..., mcp_fetch=...)` fetches `tools/list` from trusted
   servers and the proxy falls back to those annotations when a request omits them.
 - Tier resolution trusts operator config for `trusted_tool_servers`; annotations are never trusted

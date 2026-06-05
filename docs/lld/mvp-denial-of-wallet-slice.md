@@ -1,6 +1,6 @@
 # LLD: MVP Vertical Slice — Denial-of-Wallet / Scope-Escape
 
-Low-level design for the **first implementable slice** of the Seatbelt harness.
+Low-level design for the **first implementable slice** of the Agentbelt harness.
 Defends threats **T1** (scope escape / free inference) and **T7** (unbounded consumption);
 satisfies requirements **R1** scope, **R5** budget, **R7** telemetry, **R8** fail-safe.
 
@@ -35,10 +35,10 @@ output DLP, canary/honeytokens.
 ## 2. Request/response sequence
 
 ```
-CLIENT                      SEATBELT PROXY                     UPSTREAM MODEL
+CLIENT                      AGENTBELT PROXY                     UPSTREAM MODEL
   │                              │                                   │
   │── POST /v1/chat/completions ▶│                                   │
-  │   + X-Seatbelt-Session       │                                   │
+  │   + X-Agentbelt-Session       │                                   │
   │                              │                                   │
   │                   [H0] resolve principal + budget check           │
   │                        │ over budget? → 429                      │
@@ -59,7 +59,7 @@ CLIENT                      SEATBELT PROXY                     UPSTREAM MODEL
 
 ```python
 def resolve_principal(request) -> Principal:
-    """X-Seatbelt-Session header, fallback hash(IP + session_token + fingerprint)."""
+    """X-Agentbelt-Session header, fallback hash(IP + session_token + fingerprint)."""
 
 def check_budget(principal: Principal) -> "allow | throttle | deny":
     """Fail-CLOSED on store error."""
@@ -84,7 +84,7 @@ def emit_audit(record: AuditRecord) -> None
 ```python
 @dataclass
 class Session:
-    id: str                    # from X-Seatbelt-Session or generated
+    id: str                    # from X-Agentbelt-Session or generated
     principal_key: str         # composite hash
     cost_used: float           # weighted cost units consumed in current window
     window_start: datetime
@@ -115,9 +115,9 @@ class EgressConfig:
 
 ```json
 {
-  "principal": "Seatbelt::Session::\"sess_abc123\"",
-  "action": "Seatbelt::Action::\"AdmitInput\"",
-  "resource": "Seatbelt::Endpoint::\"chat_completions\"",
+  "principal": "Agentbelt::Session::\"sess_abc123\"",
+  "action": "Agentbelt::Action::\"AdmitInput\"",
+  "resource": "Agentbelt::Endpoint::\"chat_completions\"",
   "context": {
     "cost_used": 34.5,
     "budget_remaining": 15.5,
@@ -132,9 +132,9 @@ class EgressConfig:
 
 ```json
 {
-  "principal": "Seatbelt::Session::\"sess_abc123\"",
-  "action": "Seatbelt::Action::\"Egress\"",
-  "resource": "Seatbelt::Endpoint::\"chat_completions\"",
+  "principal": "Agentbelt::Session::\"sess_abc123\"",
+  "action": "Agentbelt::Action::\"Egress\"",
+  "resource": "Agentbelt::Endpoint::\"chat_completions\"",
   "context": {
     "contains_links": true,
     "link_domains": ["external.example.com"],

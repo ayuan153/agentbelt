@@ -18,7 +18,7 @@ R7 ("observe & detect") imply we need *session-level* state, not just per-turn c
 ## Decision
 
 Add a **session-level risk accumulator** as an augmentation of the input guard (H1), implemented as
-a pluggable `RiskScorer` (`seatbelt/risk.py`, default `CrescendoRiskScorer`). It is deterministic
+a pluggable `RiskScorer` (`agentbelt/risk.py`, default `CrescendoRiskScorer`). It is deterministic
 (no LLM/network) so it is cheap and reproducible.
 
 Each turn, the scorer updates `session.risk_score`:
@@ -51,7 +51,7 @@ operators tune per risk appetite.
 - **Heuristic, not semantic.** A keyword/decay model will miss paraphrased escalation and can be
   evaded; it is a *floor*, not a guarantee. The pluggable interface allows swapping in a learned
   scorer (e.g. a DeepContext-style intent-drift model) later. An alternative **semantic charter-drift
-  scorer** is already shipped (`seatbelt/risk_semantic.py`, selectable via `risk.scorer: semantic`) —
+  scorer** is already shipped (`agentbelt/risk_semantic.py`, selectable via `risk.scorer: semantic`) —
   a deterministic lexical-drift *proxy* for that learned model, demonstrating the interface is
   pluggable. See [`../lld/multi-turn-risk-and-tiering.md`](../lld/multi-turn-risk-and-tiering.md).
 - **Session identity required.** Accuracy depends on a stable principal/session (see D3/D4 in

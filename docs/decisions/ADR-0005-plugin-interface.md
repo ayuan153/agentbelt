@@ -6,11 +6,11 @@
 
 ## Context
 
-Seatbelt's value proposition is being a *generic, configurable* harness. The built-in guards are
+Agentbelt's value proposition is being a *generic, configurable* harness. The built-in guards are
 deliberately simple and deterministic (keyword scope, heuristic risk, lexical drift). Power users
 will outgrow them — they'll want to plug in their **own** scope classifier, their own multi-turn
 risk model, or their own policy engine — **without forking the harness or training anything inside
-it**. We already express each control as a Protocol in `seatbelt/types.py`; what was missing was an
+it**. We already express each control as a Protocol in `agentbelt/types.py`; what was missing was an
 ergonomic way to *select and load* an implementation.
 
 This is intentionally **not** about training models. It is the software seam that lets someone bring
@@ -19,7 +19,7 @@ a model (or any custom logic) they built elsewhere.
 ## Decision
 
 Introduce a **provider** indirection for every extension point. A provider is a factory
-`factory(cfg: SeatbeltConfig) -> component`, where `component` satisfies the matching Protocol
+`factory(cfg: AgentbeltConfig) -> component`, where `component` satisfies the matching Protocol
 (`ScopeGuard` / `RiskScorer` / `BudgetGovernor` / `EgressGuard` / `PolicyDecisionPoint`).
 
 Selection is config-driven, via a top-level `providers:` map, where each value is **either**:
@@ -34,7 +34,7 @@ providers:
   pdp:    cedar
 ```
 
-`seatbelt/plugins.py` provides `register(kind, name)` (for built-ins / in-process registration) and
+`agentbelt/plugins.py` provides `register(kind, name)` (for built-ins / in-process registration) and
 `resolve(kind, spec, cfg)` (dotted-path import or registry lookup → call `factory(cfg)`). `create_app`
 builds all five guards through `resolve(...)`, defaulting to the built-ins, so existing deployments
 are unchanged. The factory receives the **whole config**, so a custom component has full access to
@@ -47,15 +47,15 @@ There are **six** pluggable kinds: `scope`, `risk`, `budget`, `egress`, `pdp`, a
 (the H2 context firewall — `ProvenanceProvider.turn_trust`). The audit sink remains infrastructure
 and is not pluggable.
 
-Configuration is validated **fail-fast**: `seatbelt/validate.py` constructs every provider (so a
+Configuration is validated **fail-fast**: `agentbelt/validate.py` constructs every provider (so a
 bad built-in name or an unimportable plugin path is caught at boot, not at first request) and
-sanity-checks key knobs. `python -m seatbelt` validates on startup; `python -m seatbelt --check`
+sanity-checks key knobs. `python -m agentbelt` validates on startup; `python -m agentbelt --check`
 validates only (exit 0 ok / 1 errors).
 
 ## Consequences
 
 - A power user plugs in their own model by writing a one-line factory and pointing config at it —
-  no harness fork, no PR, no training inside Seatbelt.
+  no harness fork, no PR, no training inside Agentbelt.
 - Built-ins are just registered providers, so the core and "custom" paths are identical and equally
   tested (`tests/test_plugins.py`, incl. an end-to-end custom scorer).
 - Keeps the harness generic: domain/risk *intelligence* can live in operator-owned plugins while the
@@ -83,4 +83,4 @@ validates only (exit 0 ok / 1 errors).
 
 *Related:* [`../lld/plugin-interface.md`](../lld/plugin-interface.md) (bring-your-own guide),
 [`../configurability.md`](../configurability.md), [ADR-0004](ADR-0004-multi-turn-risk.md)
-(RiskScorer is the headline pluggable point), `seatbelt/types.py` (the Protocols).
+(RiskScorer is the headline pluggable point), `agentbelt/types.py` (the Protocols).

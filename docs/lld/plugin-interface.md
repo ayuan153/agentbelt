@@ -1,12 +1,12 @@
 # Plugin Interface — Bring Your Own Component
 
-Seatbelt's guards are **pluggable**. Without training anything in the harness, a power user can drop
+Agentbelt's guards are **pluggable**. Without training anything in the harness, a power user can drop
 in their own scope classifier, multi-turn risk model, policy engine, etc. Decision rationale:
 [ADR-0005](../decisions/ADR-0005-plugin-interface.md).
 
 ## The six extension points (contracts)
 
-Each is a Protocol in `seatbelt/types.py`. Implement the one you want to replace:
+Each is a Protocol in `agentbelt/types.py`. Implement the one you want to replace:
 
 | Kind (`providers:` key) | Protocol | Method you implement | Built-ins |
 |-------------------------|----------|----------------------|-----------|
@@ -30,15 +30,15 @@ providers:
 ```
 
 `resolve(kind, spec, cfg)` imports the dotted path (or looks up the registry) and calls
-`factory(cfg)`. The factory gets the **whole `SeatbeltConfig`** (charter, params, tool tiers, …), and
+`factory(cfg)`. The factory gets the **whole `AgentbeltConfig`** (charter, params, tool tiers, …), and
 your component gets per-call context through its Protocol method. Unknown names raise `ValueError`.
 
 ## Minimal example (bring your own RiskScorer)
 
-See [`seatbelt/contrib/example_plugin.py`](../../seatbelt/contrib/example_plugin.py):
+See [`agentbelt/contrib/example_plugin.py`](../../agentbelt/contrib/example_plugin.py):
 
 ```python
-from seatbelt.types import RiskResult
+from agentbelt.types import RiskResult
 
 class MyScorer:                                  # implements RiskScorer
     def __init__(self, threshold): self.threshold = threshold
@@ -58,7 +58,7 @@ providers:
   risk_params: { threshold: 0.7 }
 ```
 
-That's the whole integration — no harness fork, no training inside Seatbelt. When `score_turn`
+That's the whole integration — no harness fork, no training inside Agentbelt. When `score_turn`
 reports `tripped`, the proxy deflects the turn through the existing Cedar `AdmitInput` path
 (same as the built-in scorers).
 
@@ -67,7 +67,7 @@ reports `tripped`, the proxy deflects the turn through the existing Cedar `Admit
 If you'd rather register by name at import time:
 
 ```python
-from seatbelt.plugins import register
+from agentbelt.plugins import register
 @register("risk", "my_scorer")
 def make(cfg): return MyScorer(cfg.risk.threshold)
 # then:  providers: { risk: my_scorer }   (ensure your module is imported first)
@@ -81,8 +81,8 @@ def make(cfg): return MyScorer(cfg.risk.threshold)
 - Protocol signatures are fixed; if you need richer context than a method passes, read it from `cfg`
   at construction. Widening a Protocol is a future versioned change.
 - `ProvenanceTracker` (the `provenance` kind) is now pluggable; only the audit sink remains infra.
-- **Validated fail-fast:** `python -m seatbelt --check` (and a normal boot) constructs every provider
-  via `seatbelt/validate.py`, so a bad built-in name or an unimportable plugin path is reported at
+- **Validated fail-fast:** `python -m agentbelt --check` (and a normal boot) constructs every provider
+  via `agentbelt/validate.py`, so a bad built-in name or an unimportable plugin path is reported at
   startup with `ERROR: provider[<kind>]=...`, not at first request.
 
 ## Tested

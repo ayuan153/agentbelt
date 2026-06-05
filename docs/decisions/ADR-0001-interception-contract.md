@@ -6,7 +6,7 @@
 
 ## Context
 
-Seatbelt needs a concrete integration surface that lets it observe and mediate all
+Agentbelt needs a concrete integration surface that lets it observe and mediate all
 communication between an agent and its model provider, as well as between the agent
 and its tools — without requiring in-process instrumentation of the host application.
 
@@ -20,19 +20,19 @@ HTTP. An HTTP reverse-proxy approach requires **zero in-process code** from the 
 
 ## Decision
 
-Seatbelt's first concrete form is an **HTTP reverse proxy** exposing two surfaces:
+Agentbelt's first concrete form is an **HTTP reverse proxy** exposing two surfaces:
 
 ### 1. Model Proxy
 
 - Endpoint: `POST /v1/chat/completions` (OpenAI-compatible, including streaming via SSE).
-- The builder points their agent's model `base_url` at Seatbelt.
-- Seatbelt inspects the full request (`messages[]`, `tools[]`, `model`, params) and
+- The builder points their agent's model `base_url` at Agentbelt.
+- Agentbelt inspects the full request (`messages[]`, `tools[]`, `model`, params) and
   the full response (assistant message, `tool_calls`, `usage`).
 - Hook mapping: **H1** (input guard) on request, **H5** (output guard) on response.
 
 ### 2. Tool / MCP Proxy
 
-- Seatbelt proxies MCP servers (Streamable HTTP transport) and/or plain HTTP tool
+- Agentbelt proxies MCP servers (Streamable HTTP transport) and/or plain HTTP tool
   endpoints, intercepting the `tools/call` method.
 - Hook mapping: **H3** (tool/action mediation) on every `tools/call`, **H6** (egress
   guard) on outbound network calls the tool makes.
@@ -40,7 +40,7 @@ Seatbelt's first concrete form is an **HTTP reverse proxy** exposing two surface
 ### Cross-cutting
 
 - **H0** (budget + telemetry) wraps both surfaces.
-- **Session correlation**: via an `X-Seatbelt-Session` request header. Fallback when
+- **Session correlation**: via an `X-Agentbelt-Session` request header. Fallback when
   absent: composite principal hash of `IP + token + optional fingerprint`.
 
 ### Out of first scope
@@ -65,7 +65,7 @@ Seatbelt's first concrete form is an **HTTP reverse proxy** exposing two surface
   causal provenance requires the future in-process shim.
 - **Non-HTTP transports**: agents using gRPC, stdio-based MCP, or local function calls
   are not covered until additional adapters are built.
-- **Session correlation fragility**: without the explicit `X-Seatbelt-Session` header,
+- **Session correlation fragility**: without the explicit `X-Agentbelt-Session` header,
   the composite-hash fallback may misattribute requests when clients share IPs/tokens.
 - **Vendor drift**: if the OpenAI API introduces breaking changes, the proxy must be
   updated; mitigated by targeting the stable `/v1/` surface.

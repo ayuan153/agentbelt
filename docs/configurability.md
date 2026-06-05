@@ -1,9 +1,9 @@
 # Genericity & Configuration Model
 
-The point of Seatbelt is to be a **generic, pluggable harness** that clips onto *any* app
+The point of Agentbelt is to be a **generic, pluggable harness** that clips onto *any* app
 builder's conversational agent. So it must know **nothing** about your app. The split is:
 
-> **Seatbelt ships the mechanism + safe defaults. The operator declares the intent via config.
+> **Agentbelt ships the mechanism + safe defaults. The operator declares the intent via config.
 > You fill in a config; you never fork the harness.**
 
 Everything a deployment needs to express lives in three operator-owned config surfaces:
@@ -23,7 +23,7 @@ This document answers the "make it flexible / don't tie it to a use case" feedba
 
 ## 1. Who owns what
 
-| Concern | Mechanism (Seatbelt ships) | Intent (operator declares) | If operator is silent |
+| Concern | Mechanism (Agentbelt ships) | Intent (operator declares) | If operator is silent |
 |---------|----------------------------|----------------------------|-----------------------|
 | Scope | Layered scope evaluator (§2) | Purpose charter + allow/deny intents + examples | Deny-by-default to declared intents |
 | Sensitive actions | Tier resolver + Cedar PDP (§3) | Per-tool tier overrides; trusted tool servers | Treat unclassified as **sensitive** |
@@ -39,7 +39,7 @@ only in the operator's config values.
 
 ## 2. Scope as a configurable rules-agent  *(resolves D1)*
 
-Seatbelt does **not** hardcode what's on-topic. The operator supplies a **scope contract**, and a
+Agentbelt does **not** hardcode what's on-topic. The operator supplies a **scope contract**, and a
 swappable **scope evaluator** (the "rules agent") enforces it. The contract is declarative:
 
 ```yaml
@@ -76,7 +76,7 @@ an off-scope request that slips through **can't do anything and can't cost much*
 
 ## 3. Generic sensitive-action classification  *(resolves D2 — my state-of-the-art opinion)*
 
-A generic harness can't know your tools, so it must *derive* risk. Seatbelt resolves each tool to a
+A generic harness can't know your tools, so it must *derive* risk. Agentbelt resolves each tool to a
 **sensitivity tier** by a 3-step precedence, then attaches a Cedar-enforced control to the tier:
 
 **Step 1 — Operator override (authoritative).** A declarative map wins over everything:
@@ -89,9 +89,9 @@ trusted_tool_servers: ["tools.internal.example.com"]   # whose annotations we'll
 
 **Step 2 — Standard risk annotations, *only from trusted servers*.** The MCP spec defines
 [`ToolAnnotations`](https://modelcontextprotocol.io/specification/2025-03-26/server/tools):
-`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`. Seatbelt maps them to tiers —
+`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`. Agentbelt maps them to tiers —
 **but the spec is explicit that these are hints and "clients MUST consider tool annotations
-untrusted unless they come from trusted servers."** So Seatbelt only believes annotations from
+untrusted unless they come from trusted servers."** So Agentbelt only believes annotations from
 servers in `trusted_tool_servers`; annotations from anyone else are ignored for the security
 decision. Conservative omission defaults align with default-deny:
 
@@ -118,10 +118,10 @@ when { resource.tier == "high" && !(context.user_verified && context.human_confi
 This is generic (works for any builder's tools), leans on a real interoperability standard (MCP
 annotations) where it's *safe* to, and fails safe everywhere else.
 
-> **Implemented** in `seatbelt/tooltier.py` (`resolve_tier`) and wired into the proxy's tool
+> **Implemented** in `agentbelt/tooltier.py` (`resolve_tier`) and wired into the proxy's tool
 > mediation. The prototype reads annotations from each request tool def via a `function.annotations`
 > + `function.x_mcp_server` convention, **and** can discover them directly from trusted MCP servers
-> (`seatbelt/mcp_discovery.py`; `create_app(..., mcp_fetch=...)` fetches `tools/list`). See
+> (`agentbelt/mcp_discovery.py`; `create_app(..., mcp_fetch=...)` fetches `tools/list`). See
 > [`lld/multi-turn-risk-and-tiering.md`](lld/multi-turn-risk-and-tiering.md).
 
 ---
@@ -129,7 +129,7 @@ annotations) where it's *safe* to, and fails safe everywhere else.
 ## 4. Configuration is the whole interface
 
 A deployment is fully described by the YAML above plus a Cedar policy file plus a few knobs (§5–§7).
-Retargeting Seatbelt from a restaurant bot to a bank bot or an HR bot means **editing these files —
+Retargeting Agentbelt from a restaurant bot to a bank bot or an HR bot means **editing these files —
 never the harness**. The case study in §8 makes that concrete.
 
 ---
@@ -137,7 +137,7 @@ never the harness**. The case study in §8 makes that concrete.
 ## 5. Anonymous-abuse default posture  *(resolves D4 — my opinion)*
 
 **Default opinion: open + cost-capped + graduated friction. Do not force login.** A generic harness
-can't assume the host app even *has* auth, and forcing it would break pluggability. So Seatbelt ships:
+can't assume the host app even *has* auth, and forcing it would break pluggability. So Agentbelt ships:
 
 - **Composite principal** = `hash(IP, session-token, optional fingerprint)` — no login required.
 - **Cost-aware budget** per principal per rolling window, **weighted to output tokens** (the
@@ -173,7 +173,7 @@ this: **Bedrock AgentCore Gateway** (Cedar per `tools/call` + Lambda interceptor
 Gateway** (AI MCP Proxy, MCP tool-level access control, guardrails), **Solo.io agentgateway**
 (MCP/A2A governance). None require in-process code.
 
-So Seatbelt ships **gateway-first** as the zero-instrumentation default, and treats an in-process
+So Agentbelt ships **gateway-first** as the zero-instrumentation default, and treats an in-process
 shim as an *enhancement*, not a requirement:
 
 | Control | Gateway-only (default) | Needs in-process shim |
@@ -219,7 +219,7 @@ fail_posture:        # operator can override any path
 
 To show the harness is generic, here's a complete config for a **facsimile quick-service-restaurant
 assistant** (call it *BurritoBot*) — the class of bot behind the real Chipotle "free Claude Code"
-incident ([`incidents.md`](incidents.md) #10). Seatbelt has no "restaurant" code; this is *only*
+incident ([`incidents.md`](incidents.md) #10). Agentbelt has no "restaurant" code; this is *only*
 config:
 
 ```yaml
@@ -268,7 +268,7 @@ fail_posture: { default: closed }
 ```
 
 Same harness, same six hooks, same Cedar PDP — only the operator's intent changed. That is the
-"seatbelt": one belt, any vehicle.
+"agentbelt": one belt, any vehicle.
 
 ---
 

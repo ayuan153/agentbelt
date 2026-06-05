@@ -1,4 +1,4 @@
-# Seatbelt Harness Design
+# Agentbelt Harness Design
 
 How a pluggable protective layer wraps an existing conversational agent and enforces the
 requirements (R1–R8) derived in [`threat-model.md`](threat-model.md).
@@ -30,7 +30,7 @@ requirements (R1–R8) derived in [`threat-model.md`](threat-model.md).
 
 ## 2. Where it plugs into the agent loop
 
-A generic agent loop and the Seatbelt **hook points** (▣):
+A generic agent loop and the Agentbelt **hook points** (▣):
 
 ```
    user / 3rd-party content
@@ -159,7 +159,7 @@ Governs everything that leaves — links/images in the answer *and* outbound too
 
 ```python
 # Illustrative — the *shape* of enforcement, not an implementation.
-def seatbelt(turn, ctx, agent, policy):
+def agentbelt(turn, ctx, agent, policy):
     pdp = PolicyEngine(policy)
 
     # H1 input
@@ -195,7 +195,7 @@ def seatbelt(turn, ctx, agent, policy):
 | **SDK / middleware** | Hooks/callbacks in the agent framework (e.g., LangChain/LlamaIndex/custom) | You own the agent code | Per-framework adapters |
 | **Sidecar (PDP/PEP split)** | Guards (PEPs) call a sidecar Policy Decision Point over a thin API | Polyglot/multi-agent fleets sharing one policy | Network hop per decision |
 
-All three enforce the **same declarative policy** — that's what makes it a reusable "seatbelt"
+All three enforce the **same declarative policy** — that's what makes it a reusable "agentbelt"
 rather than a per-product bolt-on. A minimal integration buckles in input + egress + budget; teams
 add context-firewall and action-mediation as they wire in RAG and tools.
 

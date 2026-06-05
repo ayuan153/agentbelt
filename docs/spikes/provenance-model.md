@@ -8,7 +8,7 @@
 
 ## 1. Problem Statement
 
-The single most load-bearing control in Seatbelt is the **capability-downgrade invariant**: untrusted content must not be able to trigger tool calls or data egress. This is the defense against indirect prompt injection — threats T3 (tool-call hijacking via injected instructions) and T5 (data exfiltration via crafted output).
+The single most load-bearing control in Agentbelt is the **capability-downgrade invariant**: untrusted content must not be able to trigger tool calls or data egress. This is the defense against indirect prompt injection — threats T3 (tool-call hijacking via injected instructions) and T5 (data exfiltration via crafted output).
 
 Real incidents motivating this:
 
@@ -55,11 +55,11 @@ Map `system`/`developer` → **TRUSTED**, `user` → **USER**, `tool` → **UNTR
 
 ### Option B: Role-based + host-app labeling convention
 
-Host app annotates messages with a `seatbelt_trust` field (or uses a naming convention like `[RETRIEVED_CONTEXT]` delimiters). Gateway reads the annotation; falls back to role-based (Option A) if absent.
+Host app annotates messages with a `agentbelt_trust` field (or uses a naming convention like `[RETRIEVED_CONTEXT]` delimiters). Gateway reads the annotation; falls back to role-based (Option A) if absent.
 
 ```jsonc
 // Host-app labeled message
-{ "role": "user", "content": "...", "seatbelt_trust": "UNTRUSTED" }
+{ "role": "user", "content": "...", "agentbelt_trust": "UNTRUSTED" }
 ```
 
 - ✅ Solves the RAG-in-user-message gap with minimal protocol extension
@@ -79,7 +79,7 @@ Wrap untrusted content in random sentinel tokens that the model is instructed to
 
 - ✅ Reduces injection success rate at model level
 - ❌ Not an enforcement mechanism — model may still comply
-- ❌ Requires prompt modification (acceptable for Seatbelt's input guard)
+- ❌ Requires prompt modification (acceptable for Agentbelt's input guard)
 
 ### Recommendation
 
@@ -168,7 +168,7 @@ See [ADR-0003](../decisions/ADR-0003-cedar-policy-schema.md) for the Cedar polic
 
 ## 7. Decision
 
-**Recommended provenance model for Seatbelt gateway:**
+**Recommended provenance model for Agentbelt gateway:**
 
 1. **Three tiers**: TRUSTED, USER, UNTRUSTED — derived from message role with host-app labeling override (Option B).
 2. **Cross-turn state**: content-hash → tier map in shared session store (Redis), with `new_untrusted` flag per session.

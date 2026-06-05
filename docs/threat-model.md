@@ -1,7 +1,7 @@
 # Threat Model & Attack Taxonomy
 
 Synthesized from the sourced incidents in [`incidents.md`](incidents.md). The goal here is to
-turn ~14 real events into a structured model the Seatbelt harness can be designed against.
+turn ~14 real events into a structured model the Agentbelt harness can be designed against.
 
 ---
 
@@ -141,7 +141,7 @@ Defending both clusters well requires controls at **three** points: input, actio
 
 ## 5. Attack lifecycle (kill chain)
 
-A unifying chain Seatbelt's controls should be able to break at multiple links:
+A unifying chain Agentbelt's controls should be able to break at multiple links:
 
 ```
   1. ENTRY        2. INJECTION/        3. ESCALATION       4. ACTION / EXFIL     5. CHANNEL OUT

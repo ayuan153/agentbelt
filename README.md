@@ -1,4 +1,4 @@
-# 🪢 Seatbelt
+# 🪢 Agentbelt
 
 **A pluggable protective harness for conversational AI agents.**
 
@@ -8,16 +8,16 @@
 ![policy](https://img.shields.io/badge/policy-Cedar-orange)
 ![status](https://img.shields.io/badge/status-reference%20implementation-blueviolet)
 
-Seatbelt is a drop-in, OpenAI-compatible proxy that wraps an existing conversational agent and
+Agentbelt is a drop-in, OpenAI-compatible proxy that wraps an existing conversational agent and
 defends it against **jailbreaks, prompt injection, data exfiltration, and denial-of-wallet abuse** —
-*without touching the agent's code*. Point your agent's model `base_url` at Seatbelt and it enforces a
+*without touching the agent's code*. Point your agent's model `base_url` at Agentbelt and it enforces a
 declarative policy about scope, data, spend, and tool use, then forwards to the real model.
 
 One belt, any vehicle. Swap the agent or the model — the policy stays put.
 
 ```bash
-pip install seatbelt-harness
-seatbelt init && seatbelt serve        # then set your agent's base_url to http://localhost:8088/v1
+pip install agentbelt
+agentbelt init && agentbelt serve        # then set your agent's base_url to http://localhost:8088/v1
 ```
 
 ---
@@ -39,7 +39,7 @@ in content it would later read:
 - **Air Canada** was held legally liable for a refund policy its chatbot invented.
 
 The common thread: the agent loop has **no consistent enforcement layer**. Guardrails get bolted on
-per-product, inconsistently, usually after the bot is already viral. Seatbelt is that enforcement
+per-product, inconsistently, usually after the bot is already viral. Agentbelt is that enforcement
 layer, as a reusable harness you clip on. See [`docs/incidents.md`](docs/incidents.md) for the
 sourced incident research.
 
@@ -48,7 +48,7 @@ sourced incident research.
 ## What it does
 
 ```
-                    ┌─────────────────────── SEATBELT HARNESS ───────────────────────┐
+                    ┌─────────────────────── AGENTBELT HARNESS ───────────────────────┐
                     │                                                                 │
   user / content ──▶│  INPUT GUARD ──▶ [ your agent / LLM loop ] ──▶ OUTPUT GUARD ──▶ │──▶ user
                     │       ▲                   │      ▲                  │            │
@@ -78,11 +78,11 @@ harness.
 ## Quickstart
 
 ```bash
-pip install seatbelt-harness
+pip install agentbelt
 
-seatbelt init                 # writes seatbelt.yaml — edit the scope/budget/tools for your agent
-seatbelt check                # validate config + all providers (fail-fast; great for CI)
-OPENAI_API_KEY=sk-... seatbelt serve   # serves an OpenAI-compatible proxy on :8088
+agentbelt init                 # writes agentbelt.yaml — edit the scope/budget/tools for your agent
+agentbelt check                # validate config + all providers (fail-fast; great for CI)
+OPENAI_API_KEY=sk-... agentbelt serve   # serves an OpenAI-compatible proxy on :8088
 ```
 
 Then point your agent's OpenAI `base_url` at `http://localhost:8088/v1`. That's it — no agent code
@@ -99,9 +99,9 @@ curl localhost:8088/v1/chat/completions -H 'content-type: application/json' -d '
 Working from source instead?
 
 ```bash
-git clone https://github.com/ayuan153/seatbelt && cd seatbelt
+git clone https://github.com/ayuan153/agentbelt && cd agentbelt
 pip install -e . && pytest -q          # 85 tests, no API keys needed (mock upstream)
-SEATBELT_CONFIG=config/burritobot.yaml seatbelt serve
+AGENTBELT_CONFIG=config/burritobot.yaml agentbelt serve
 ```
 
 ---
@@ -117,7 +117,7 @@ providers:
   risk: "yourpkg.guards:make_scorer"   # a factory(cfg) -> object implementing the RiskScorer protocol
 ```
 
-The Protocols in `seatbelt/types.py` are the contract; `seatbelt check` validates your plugin loads
+The Protocols in `agentbelt/types.py` are the contract; `agentbelt check` validates your plugin loads
 at startup. See the [bring-your-own guide](docs/lld/plugin-interface.md) and
 [ADR-0005](docs/decisions/ADR-0005-plugin-interface.md).
 
@@ -125,7 +125,7 @@ at startup. See the [bring-your-own guide](docs/lld/plugin-interface.md) and
 
 ## How it maps to real incidents
 
-| Incident | Class | Seatbelt control that stops it |
+| Incident | Class | Agentbelt control that stops it |
 |----------|-------|--------------------------------|
 | Chevrolet "$1 truck" + free code | Scope escape / denial-of-wallet | Scope guard deflects; budget cap bounds cost |
 | Samsung code-paste leak | Sensitive-data egress | Outbound DLP / egress guard |
@@ -142,7 +142,7 @@ Full taxonomy in [`docs/threat-model.md`](docs/threat-model.md); sourcing and ve
 
 ## Project status
 
-Seatbelt is a **working, test-covered reference implementation** (85 passing tests) of the harness
+Agentbelt is a **working, test-covered reference implementation** (85 passing tests) of the harness
 design — runnable today as a local proxy or an in-process shim. It is built to be *extended*: the
 guards are deliberately simple, deterministic defaults behind clean Protocols so you can swap in
 your own models/policies.
@@ -165,7 +165,7 @@ for the honest tradeoffs and [`docs/roadmap.md`](docs/roadmap.md) for what's nex
 | [`docs/decisions/`](docs/decisions) | Architecture Decision Records (ADRs) |
 | [`docs/lld/`](docs/lld) | Low-level designs for each implemented slice |
 | [`docs/roadmap.md`](docs/roadmap.md) | Distribution & adoption roadmap |
-| `seatbelt/` · `config/` · `tests/` | Implementation · example configs · test suite |
+| `agentbelt/` · `config/` · `tests/` | Implementation · example configs · test suite |
 
 ---
 

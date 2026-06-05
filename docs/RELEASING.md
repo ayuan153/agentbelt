@@ -1,6 +1,6 @@
-# Releasing Seatbelt
+# Releasing Agentbelt
 
-How `seatbelt-harness` is published to PyPI. The package is distributed as **`seatbelt-harness`**
+How `agentbelt` is published to PyPI. The package is distributed as **`agentbelt`**
 (see [ADR-0006](decisions/ADR-0006-naming-and-distribution.md) for the naming rationale).
 
 Publishing uses **PyPI Trusted Publishing (OIDC)** via GitHub Actions — there is **no API token**
@@ -11,8 +11,8 @@ distributions and uploads them from the `publish` job using a short-lived OIDC t
 
 1. **Register a pending publisher on PyPI.** Go to
    <https://pypi.org/manage/account/publishing/> and add a *pending* publisher with:
-   - **PyPI project name:** `seatbelt-harness`
-   - **Owner:** `ayuan153`  ·  **Repository:** `seatbelt`
+   - **PyPI project name:** `agentbelt`
+   - **Owner:** `ayuan153`  ·  **Repository:** `agentbelt`
    - **Workflow filename:** `release.yml`
    - **Environment name:** `pypi`
 
@@ -28,7 +28,7 @@ distributions and uploads them from the `publish` job using a short-lived OIDC t
 
 ## Cutting a release
 
-1. **Bump the version** in `pyproject.toml` (`project.version`). Seatbelt follows semantic
+1. **Bump the version** in `pyproject.toml` (`project.version`). Agentbelt follows semantic
    versioning; pre-1.0 the project is `Development Status :: 3 - Alpha`, so minor bumps may carry
    breaking changes — call them out in the release notes.
 2. **Land the changes** on `main` (PR + green CI). The release builds whatever the tag points at.
@@ -40,8 +40,8 @@ distributions and uploads them from the `publish` job using a short-lived OIDC t
    ```
 5. **Approve the deployment.** The `release` workflow runs `build`, then pauses at the `publish`
    job waiting for the `pypi` environment reviewer. Approve it in the GitHub Actions UI.
-6. **Verify** the release appears at <https://pypi.org/project/seatbelt-harness/> and installs
-   cleanly: `pipx install seatbelt-harness` (or `pip install` in a fresh venv) then `seatbelt --help`.
+6. **Verify** the release appears at <https://pypi.org/project/agentbelt/> and installs
+   cleanly: `pipx install agentbelt` (or `pip install` in a fresh venv) then `agentbelt --help`.
 7. **Write GitHub release notes** for the tag.
 
 > Tags are immutable on PyPI: **a version can never be re-uploaded or overwritten.** If a release is
@@ -62,7 +62,7 @@ Optionally upload to TestPyPI first (requires a TestPyPI trusted publisher or to
 
 ```bash
 .venv/bin/twine upload --repository testpypi dist/*
-pip install --index-url https://test.pypi.org/simple/ seatbelt-harness
+pip install --index-url https://test.pypi.org/simple/ agentbelt
 ```
 
 ## What is NOT automated (by design)
@@ -74,7 +74,8 @@ pip install --index-url https://test.pypi.org/simple/ seatbelt-harness
 
 ## TypeScript client (`clients/typescript`)
 
-Per ADR-0006, the npm `@seatbelt/client` name is **unavailable** (the `@seatbelt` scope is owned by
-another user). The client's npm publish is **deferred / unresolved** — interop with the proxy works
-today via a `base_url` swap without any client package. Resolve the package name (e.g.
-`seatbelt-harness-client`) before attempting an npm publish; this Python release does not depend on it.
+Per [ADR-0006](decisions/ADR-0006-naming-and-distribution.md), the client publishes to npm as the
+unscoped **`agentbelt-client`** (the original `@seatbelt` scope was owned by another user, which was
+one of the reasons for the rebrand). Its npm publish is **optional / deferred** — interop with the
+proxy works today via a `base_url` swap without any client package, so this Python release does not
+depend on it.

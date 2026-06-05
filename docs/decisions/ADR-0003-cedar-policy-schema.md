@@ -6,7 +6,7 @@
 
 ## Context
 
-Seatbelt requires a declarative policy engine to evaluate authorization decisions at
+Agentbelt requires a declarative policy engine to evaluate authorization decisions at
 each hook point. The choice of Cedar over OPA was already accepted (see
 [../open-questions.md](../open-questions.md) and
 [../configurability.md](../configurability.md)). This ADR defines the **entity schema**,
@@ -21,30 +21,30 @@ The policies must encode the capability-downgrade invariant from
 ### Entity schema
 
 ```
-entity Seatbelt::Session {
+entity Agentbelt::Session {
     user_verified: Bool,
     step_up_satisfied: Bool,
     cost_used: Long
 };
 
-entity Seatbelt::Tool {
+entity Agentbelt::Tool {
     tier: String    // "low" | "medium" | "high"
 };
 
-entity Seatbelt::Destination {
+entity Agentbelt::Destination {
     allowlisted: Bool
 };
 
-entity Seatbelt::Answer {};
+entity Agentbelt::Answer {};
 ```
 
 ### Actions
 
 ```
-action Seatbelt::Action::"AdmitInput"   appliesTo { principal: Seatbelt::Session, resource: Seatbelt::Answer };
-action Seatbelt::Action::"InvokeTool"   appliesTo { principal: Seatbelt::Session, resource: Seatbelt::Tool };
-action Seatbelt::Action::"ReturnAnswer" appliesTo { principal: Seatbelt::Session, resource: Seatbelt::Answer };
-action Seatbelt::Action::"Egress"       appliesTo { principal: Seatbelt::Session, resource: Seatbelt::Destination };
+action Agentbelt::Action::"AdmitInput"   appliesTo { principal: Agentbelt::Session, resource: Agentbelt::Answer };
+action Agentbelt::Action::"InvokeTool"   appliesTo { principal: Agentbelt::Session, resource: Agentbelt::Tool };
+action Agentbelt::Action::"ReturnAnswer" appliesTo { principal: Agentbelt::Session, resource: Agentbelt::Answer };
+action Agentbelt::Action::"Egress"       appliesTo { principal: Agentbelt::Session, resource: Agentbelt::Destination };
 ```
 
 ### Decision-time context (supplied by PEP)
@@ -73,7 +73,7 @@ No `permit` ⇒ `deny`. Illustrative policies:
 // 1. Permit low-tier read-only tools unconditionally
 permit (
     principal,
-    action == Seatbelt::Action::"InvokeTool",
+    action == Agentbelt::Action::"InvokeTool",
     resource
 ) when {
     context.tier == "low"
@@ -84,7 +84,7 @@ permit (
 // 2. Forbid high-tier tools unless user is verified AND human confirmed
 forbid (
     principal,
-    action == Seatbelt::Action::"InvokeTool",
+    action == Agentbelt::Action::"InvokeTool",
     resource
 ) when {
     context.tier == "high" &&
@@ -96,7 +96,7 @@ forbid (
 // 3. Capability-downgrade invariant: block tool/egress when provenance is untrusted
 forbid (
     principal,
-    action == Seatbelt::Action::"InvokeTool",
+    action == Agentbelt::Action::"InvokeTool",
     resource
 ) when {
     context.provenance_max_trust == "untrusted"
@@ -107,7 +107,7 @@ forbid (
 // 4. Block egress to non-allowlisted destinations
 forbid (
     principal,
-    action == Seatbelt::Action::"Egress",
+    action == Agentbelt::Action::"Egress",
     resource
 ) when {
     !resource.allowlisted
@@ -118,7 +118,7 @@ forbid (
 // 5. Block off-scope requests at input
 forbid (
     principal,
-    action == Seatbelt::Action::"AdmitInput",
+    action == Agentbelt::Action::"AdmitInput",
     resource
 ) when {
     context.scope_verdict == "offscope"
@@ -129,9 +129,9 @@ forbid (
 
 ```json
 {
-  "principal": { "type": "Seatbelt::Session", "id": "sess_abc123" },
-  "action": { "type": "Seatbelt::Action", "id": "InvokeTool" },
-  "resource": { "type": "Seatbelt::Tool", "id": "web_search" },
+  "principal": { "type": "Agentbelt::Session", "id": "sess_abc123" },
+  "action": { "type": "Agentbelt::Action", "id": "InvokeTool" },
+  "resource": { "type": "Agentbelt::Tool", "id": "web_search" },
   "context": {
     "user_verified": true,
     "human_confirmed": false,

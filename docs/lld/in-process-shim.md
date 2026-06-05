@@ -7,10 +7,10 @@ provenance **approximation** by letting the agent report, in-process, the trust 
 actually consumed — so tool mediation uses *agent-reported causal* provenance rather than the
 gateway's "any untrusted content in the messages array this turn" heuristic.
 
-## API — `seatbelt/shim.py`
+## API — `agentbelt/shim.py`
 
 ```python
-shim = SeatbeltShim(tool_tiers, trusted_servers)   # holds one CedarPDP, shares the same policies
+shim = AgentbeltShim(tool_tiers, trusted_servers)   # holds one CedarPDP, shares the same policies
 shim.begin_turn()                                  # reset per-turn taint
 shim.ingest(trust)                                 # agent reports each consumed item: 'trusted'|'user'|'untrusted'
 decision = shim.guard_tool(name, annotations=?, server=?, user_verified=?, human_confirmed=?)

@@ -13,9 +13,9 @@ agent code change.
 
 | Hook | Component | File |
 |------|-----------|------|
-| H2 | Context firewall — per-turn provenance/trust tracking | `seatbelt/provenance.py` |
-| H3 | Tool/action mediation — Cedar `InvokeTool` per tool call | `seatbelt/app.py` + `seatbelt/pdp.py` |
-| H6 | Provenance-gated egress — force link-strip on untrusted turns | `seatbelt/app.py` |
+| H2 | Context firewall — per-turn provenance/trust tracking | `agentbelt/provenance.py` |
+| H3 | Tool/action mediation — Cedar `InvokeTool` per tool call | `agentbelt/app.py` + `agentbelt/pdp.py` |
+| H6 | Provenance-gated egress — force link-strip on untrusted turns | `agentbelt/app.py` |
 
 ## The load-bearing idea: capability downgrade
 
@@ -24,7 +24,7 @@ exfiltrate**. The proxy can't read the model's private reasoning, so it *approxi
 justification by content-trust accounting (ADR-0002's documented limitation):
 
 1. **Classify** every message: `system`/`developer` → TRUSTED, `user`/`assistant` → USER,
-   `tool` → UNTRUSTED. A host app may override per message with `_seatbelt_trust` for RAG text
+   `tool` → UNTRUSTED. A host app may override per message with `_agentbelt_trust` for RAG text
    embedded in a user turn.
 2. **Track across turns** with a hash-keyed `seen_hashes` set on the session. The OpenAI
    `messages[]` array is re-sent each turn, so "new this turn" = messages whose hash is unseen.
@@ -72,7 +72,7 @@ is stripped on an untrusted turn. Full suite: **44 passing**.
 - **Approximation, not proof** — content-trust accounting, not causal tracing. A model that mixes
   a benign user instruction with injected content in the *same* turn could still be manipulated;
   the in-process shim (ADR-0002) is required for exact provenance.
-- **Embedded RAG** in a user message is USER-trust unless the host app labels it `_seatbelt_trust`.
+- **Embedded RAG** in a user message is USER-trust unless the host app labels it `_agentbelt_trust`.
 - **Tool tiers** rely on operator config; untrusted-server MCP annotations are not yet auto-ingested.
 - Per-turn taint can over-block legitimate untrusted-then-act chains; the tier carve-out (low tier
   always allowed) is the pragmatic mitigation.

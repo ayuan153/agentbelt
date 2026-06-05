@@ -1,6 +1,6 @@
 # Open Questions, Tradeoffs & Non-Goals
 
-The honest part of the ideation: where Seatbelt's design is uncertain, what it deliberately
+The honest part of the ideation: where Agentbelt's design is uncertain, what it deliberately
 won't do, and how we'd know if it works. Read after [`harness-design.md`](harness-design.md).
 
 ---
@@ -26,7 +26,7 @@ won't do, and how we'd know if it works. Read after [`harness-design.md`](harnes
 
 ---
 
-## 2. Evasion concerns (how Seatbelt itself gets attacked)
+## 2. Evasion concerns (how Agentbelt itself gets attacked)
 
 - **Multi-turn / slow-burn jailbreaks.** Splitting an attack across turns to stay under per-turn
   classifier thresholds. Needs session-level state, not just per-turn checks.
@@ -48,17 +48,17 @@ won't do, and how we'd know if it works. Read after [`harness-design.md`](harnes
 
 - **Infra-layer denial-of-wallet.** LLMjacking and exposed-Ollama/"Bizarre Bazaar" abuse stem from
   stolen credentials and unauthenticated endpoints. Those are solved by IAM, secret management,
-  network policy, and endpoint auth — *below* the agent's prompt boundary. Seatbelt assumes the
+  network policy, and endpoint auth — *below* the agent's prompt boundary. Agentbelt assumes the
   model endpoint is already authenticated and rate-limited at the infra layer.
-- **Model-internal alignment / safety tuning.** Seatbelt is an external harness; it does not retrain
+- **Model-internal alignment / safety tuning.** Agentbelt is an external harness; it does not retrain
   or fine-tune the model. It assumes the base model is fallible and wraps it accordingly.
 - **Hallucination correctness.** The Air Canada failure was a *wrong* answer, not an attack. Output
   scope/brand checks help, but factual accuracy/grounding is a separate (RAG/eval) discipline.
 - **General content moderation.** Toxicity/abuse classification is adjacent and could be a plugin,
-  but Seatbelt's focus is jailbreak / injection / exfiltration / denial-of-wallet, not a full
+  but Agentbelt's focus is jailbreak / injection / exfiltration / denial-of-wallet, not a full
   trust-and-safety stack.
 - **Endpoint/runtime hardening of tools themselves.** If a tool is insecure (SQL injection in the
-  backend it calls), that's the tool's problem; Seatbelt mediates *whether/how* it's called.
+  backend it calls), that's the tool's problem; Agentbelt mediates *whether/how* it's called.
 
 ---
 
@@ -66,7 +66,7 @@ won't do, and how we'd know if it works. Read after [`harness-design.md`](harnes
 
 Each question below carries a status: **✅ Resolved** (a defensible design choice exists today,
 grounded in current tooling/standards) or **⚠️ Needs operator's call** (a genuine product/risk
-decision Seatbelt can't make for you). The decisions in the second bucket are consolidated in
+decision Agentbelt can't make for you). The decisions in the second bucket are consolidated in
 [§4.7](#47-decisions-that-need-the-operator-flagged).
 
 ### 4.1 Where should the Context Firewall's instruction-detection run? — ✅ Resolved
@@ -78,7 +78,7 @@ blunt: every standalone injection classifier has been broken. Azure **Prompt Shi
 the characters" trick at 99.8% ([Cisco](https://blogs.cisco.com/security/bypassing-metas-llama-classifier)).
 OWASP keeps prompt injection at #1 and states no single detector suffices.
 
-So Seatbelt should layer cheapest-first and treat detection as attack-surface reduction, not a wall:
+So Agentbelt should layer cheapest-first and treat detection as attack-surface reduction, not a wall:
 
 | Layer | Mechanism | Latency | Role |
 |-------|-----------|---------|------|
@@ -96,8 +96,8 @@ pairs Spotlighting + Prompt Shields + capability restriction rather than relying
 
 ### 4.2 How is "the verified end-user" established for sensitive-action authZ? — ✅ Resolved (pattern) / ⚠️ vendor + sensitivity list
 
-**Answer: the host app must hand Seatbelt a delegated identity token tied to the real end-user, and
-Seatbelt default-denies any sensitive action lacking one.** The settled building block is
+**Answer: the host app must hand Agentbelt a delegated identity token tied to the real end-user, and
+Agentbelt default-denies any sensitive action lacking one.** The settled building block is
 **OAuth 2.0 Token Exchange, [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html)**: the agent
 exchanges its token for a scoped token naming the user as `sub` and the agent as the `act` (actor)
 claim. Effective authority is the *intersection* of user × agent permissions and only ever shrinks
@@ -107,7 +107,7 @@ for impactful actions.
 
 Agent-native "named-agent consent" flows are still **IETF drafts** (`draft-oauth-ai-agents-on-behalf-of-user`,
 `draft-klrc-aiagent-auth`, MCP authorization) — promising but not standardized; don't build on them
-as a hard dependency yet. **The contract:** Seatbelt requires a verified end-user assertion per
+as a hard dependency yet. **The contract:** Agentbelt requires a verified end-user assertion per
 sensitive action; it never treats "the chat session asked nicely" as authorization.
 *Flagged for you:* the IdP/vendor and whether step-up is in-band vs out-of-band, and **which actions
 count as "sensitive"** (a risk decision) — see §4.7.
@@ -126,7 +126,7 @@ CAPTCHAs are largely solved by 2026. Best practice is layered:
 - **Behavioral:** anomaly scoring (all-LLM-fallback traffic, abnormal lengths, rapid sequences).
 - **Optional friction:** invisible challenge (Turnstile / reCAPTCHA v3 scoring) before login.
 
-So Seatbelt's "principal" = `composite(IP, session token, optional fingerprint)` carrying a
+So Agentbelt's "principal" = `composite(IP, session token, optional fingerprint)` carrying a
 cost-unit budget. *Flagged for you:* how much friction (challenge/login) you'll impose vs. abuse you'll
 tolerate — pure UX/business tradeoff (§4.7).
 
@@ -173,7 +173,7 @@ the settled PDP/PEP (decision-point / enforcement-point) split applied as defens
 | **Gateway / proxy PEP** | HTTP auth/headers/IP, rate & cost limits, payload size, prompt/response content, HTTP tool routing, cross-session spend | internal reasoning, in-memory context, **which** reasoning branch triggered a call, in-process (non-HTTP) tool calls |
 | **In-process SDK PEP** | full loop state, plan/reasoning, **tool args + provenance before execution**, context-aware decisions, pre-exec budget checks | cross-service enforcement, infra controls (TLS/DDoS/IP) |
 
-Seatbelt's two load-bearing controls — **provenance tagging (H2)** and the **provenance-gated action
+Agentbelt's two load-bearing controls — **provenance tagging (H2)** and the **provenance-gated action
 mediation (H3)** that asks *"did this tool call originate from untrusted content?"* — are only
 answerable **in-process**, because a network gateway can't see the causal link. So: in-process PEP
 for H2/H3, gateway PEP for auth/rate/egress/audit, both consulting **one shared PDP** (Cedar/OPA).
@@ -183,7 +183,7 @@ op), NeMo Guardrails (in-process rails). Pure reverse-proxy mode is a *valid min
 
 ### 4.7 Decisions that need the operator (flagged)
 
-These are genuine product/risk/deployment calls — Seatbelt provides the mechanism, you provide the
+These are genuine product/risk/deployment calls — Agentbelt provides the mechanism, you provide the
 intent. (Per project scope, specific vendor *selection* stays out of this ideation; these are the
 shapes of the decisions.)
 
@@ -212,7 +212,7 @@ remains a genuine operator choice; the contract stays RFC 8693 token exchange.
 
 - **Red-team replay corpus.** Encode each `incidents.md` attack (Chevy off-scope, EchoLeak-style
   indirect injection, ForcedLeak egress, Meta confused-deputy, Zoom code-gen) as a test case;
-  require Seatbelt to break the chain. Regression-test against it.
+  require Agentbelt to break the chain. Regression-test against it.
 - **Benign task suite.** A matched set of *legitimate* on-scope interactions to measure the
   false-positive / over-blocking rate. Track both numbers together — a guard that blocks everything
   scores perfectly on attacks and is useless.
@@ -241,7 +241,7 @@ needed no real exploit.
 **The model (`threat-model.md`):** 8 attack classes (T1–T8) over 5 trust boundaries, a unifying
 kill chain (entry → injection → escalation → action/exfil → channel), and 8 requirements (R1–R8).
 
-**The proposal (`harness-design.md`):** Seatbelt — an *around-the-loop*, operator-owned, declarative
+**The proposal (`harness-design.md`):** Agentbelt — an *around-the-loop*, operator-owned, declarative
 harness with six hook points. The two load-bearing ideas:
 1. **Capability downgrade of ingested content** — untrusted text can never, on its own, drive a tool
    call or egress. This structurally breaks the indirect-injection data-leak chain.
@@ -250,10 +250,10 @@ harness with six hook points. The two load-bearing ideas:
 Around those: scope-enforcing input/output guards (behavior, not refusal text), authZ-backed action
 mediation (the agent is never the sole authority), per-principal budgets, and pervasive telemetry.
 
-**What makes it a "seatbelt":** one declarative policy enforced identically whether deployed as a
+**What makes it a "agentbelt":** one declarative policy enforced identically whether deployed as a
 gateway, an SDK middleware, or a sidecar — clip it on without rewriting the agent or swapping the
 model.
 
-**The honest caveat:** no layer is a proof. Seatbelt is *defense in depth* — it aims to break the
+**The honest caveat:** no layer is a proof. Agentbelt is *defense in depth* — it aims to break the
 kill chain at several independent points so one bypass isn't catastrophic, while keeping the bot
 useful enough that operators actually leave the belt fastened.
