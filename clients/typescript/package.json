@@ -1,0 +1,17 @@
+{
+  "name": "@seatbelt/client",
+  "version": "0.1.0",
+  "description": "Typed config helpers to point any OpenAI-compatible client at a Seatbelt proxy",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}
