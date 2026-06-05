@@ -47,9 +47,9 @@ The non-zero exit on any allowed attack is the important contract: it makes `sea
 **CI-usable** as a regression gate — a config change that opens a hole fails the build.
 
 Each corpus entry maps to a documented real-world incident (Chevrolet free-inference, Bing "Sydney"
-prompt extraction, off-purpose use, EchoLeak/Slack indirect tool injection — see
-[`docs/incidents.md`](../incidents.md)), so a green run is a concrete, sourced claim rather than a
-vague assurance.
+prompt extraction, off-purpose use, DPD brand-safety, EchoLeak/Slack indirect tool injection,
+Samsung-style data egress, and a multi-turn Crescendo ramp — see [`docs/incidents.md`](../incidents.md)),
+so a green run is a concrete, sourced claim rather than a vague assurance.
 
 ## `seatbelt dash`
 
@@ -89,9 +89,12 @@ with the deployment-mode separation in
 
 ## Honest limitations
 
-- **`test` is only as good as its corpus.** Four attacks covering the main classes is a smoke test,
-  not a proof of coverage; a green run means "blocks these known patterns," not "unbreakable." The
-  corpus is meant to grow (a good first-issue area).
+- **`test` is only as good as its corpus.** Seven attacks spanning scope (H1), multi-turn risk
+  (H1+), tool mediation (H3), and egress (H6) is a meaningful smoke test, not a proof of coverage; a
+  green run means "blocks these known patterns," not "unbreakable." The corpus is meant to keep
+  growing (a good first-issue area). Denial-of-wallet (budget, H0) is deliberately excluded from the
+  must-block set because its blocking is volume/config-dependent and would make the gate flaky — it
+  is covered directly in `tests/test_budget.py`.
 - **`test` uses mock upstreams**, so it exercises the *guard* decisions, not real model behavior —
   which is the point (deterministic, key-free, fast), but it does not catch model-side regressions.
 - **`dash` is a point-in-time snapshot** over a local file; it has no retention, rotation, or
