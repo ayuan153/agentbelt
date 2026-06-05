@@ -69,7 +69,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=
     provenance = resolve_provider("provenance", p.get("provenance"), cfg)
     # Optional MCP annotation discovery from trusted servers (no startup network unless fetch given).
     registry = discover_annotations(cfg.trusted_tool_servers, fetch=mcp_fetch) if mcp_fetch else {}
-    audit = AuditSink()
+    audit = AuditSink(path=os.environ.get("SEATBELT_AUDIT_LOG"))
     sessions: dict[str, Session] = {}
     up = upstream or _default_upstream(cfg.upstream_base_url)
 
