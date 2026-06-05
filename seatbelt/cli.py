@@ -3,6 +3,8 @@
   seatbelt init [path]      # scaffold a starter config (default: seatbelt.yaml)
   seatbelt check            # validate config + all providers (exit 0 ok / 1 errors)
   seatbelt serve            # run the OpenAI-compatible proxy (localhost:8088)
+  seatbelt test             # replay the red-team corpus vs your config (exit 0 all blocked / 1 any allowed)
+  seatbelt dash [path]      # render the audit-log JSONL as a terminal summary (SEATBELT_AUDIT_LOG)
 
 Config path resolves from SEATBELT_CONFIG, else ./seatbelt.yaml. The proxy is unauthenticated by
 design — put identity/principal verification in front of it for real deployments.
@@ -56,6 +58,49 @@ def _cmd_init(path: str) -> int:
     return 0
 
 
+def _cmd_dash(path: str | None) -> int:
+    """Render the audit-log JSONL as a terminal summary (read-only snapshot)."""
+    path = path or os.environ.get("SEATBELT_AUDIT_LOG")
+    if not path:
+        print(
+            "no audit log — pass a path or set SEATBELT_AUDIT_LOG "
+            "(set it when running `seatbelt serve` to record decisions)",
+            file=sys.stderr,
+        )
+        return 1
+    if not os.path.exists(path):
+        print(f"no audit log at {path} — run the proxy with SEATBELT_AUDIT_LOG set to record decisions", file=sys.stderr)
+        return 1
+    from seatbelt.dash import render
+
+    render(path)
+    return 0
+
+
+def _cmd_test(cfg) -> int:
+    """Replay the bundled red-team corpus against cfg; exit non-zero if any attack is allowed."""
+    from rich.console import Console
+    from rich.table import Table
+
+    from seatbelt.redteam import run, summary
+
+    results = run(cfg)
+    table = Table(title="Seatbelt red-team replay")
+    table.add_column("Attack")
+    table.add_column("Incident")
+    table.add_column("Result")
+    for r in results:
+        mark = "[green]BLOCKED[/]" if r.blocked else "[red]ALLOWED[/]"
+        table.add_row(r.name, r.incident, f"{mark} ({r.detail})")
+    console = Console()
+    console.print(table)
+
+    blocked, total = summary(results)
+    style = "green" if blocked == total else "red"
+    console.print(f"[{style}]{blocked}/{total} attacks blocked[/]")
+    return 0 if blocked == total else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     parser = argparse.ArgumentParser(prog="seatbelt", description="Protective harness for conversational agents.")
@@ -66,13 +111,18 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--port", type=int, default=8088)
     si = sub.add_parser("init", help="scaffold a starter config")
     si.add_argument("path", nargs="?", default="seatbelt.yaml")
+    sub.add_parser("test", help="replay the red-team corpus against your config")
+    sd = sub.add_parser("dash", help="render the audit-log JSONL as a terminal summary")
+    sd.add_argument("path", nargs="?", default=None, help="audit-log path (default: $SEATBELT_AUDIT_LOG)")
     args = parser.parse_args(argv)
     cmd = args.cmd or "serve"
 
     if cmd == "init":
         return _cmd_init(args.path)
+    if cmd == "dash":
+        return _cmd_dash(args.path)
 
-    # check / serve both need a valid config
+    # check / serve / test all need a valid config
     from seatbelt.config import load_config
     from seatbelt.validate import validate
 
@@ -88,6 +138,8 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "check":
         print("config OK")
         return 0
+    if cmd == "test":
+        return _cmd_test(cfg)
 
     import uvicorn
 
