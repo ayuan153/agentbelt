@@ -33,7 +33,7 @@ jobs:
     # The 'pypi' environment gates the upload behind any required reviewers configured in GitHub.
     environment:
       name: pypi
-      url: https://pypi.org/p/seatbelt-harness
+      url: https://pypi.org/p/agentbelt
     permissions:
       id-token: write # MANDATORY for OIDC token exchange with PyPI; no other scope needed.
     steps:

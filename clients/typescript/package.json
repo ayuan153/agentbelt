@@ -1,7 +1,7 @@
 {
-  "name": "@seatbelt/client",
+  "name": "agentbelt-client",
   "version": "0.1.0",
-  "description": "Typed config helpers to point any OpenAI-compatible client at a Seatbelt proxy",
+  "description": "Typed config helpers to point any OpenAI-compatible client at a Agentbelt proxy",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
