@@ -1,0 +1,45 @@
+name: release
+
+# Build and publish to PyPI on a version tag, using PyPI Trusted Publishing (OIDC) —
+# no long-lived API token is stored. See docs/RELEASING.md for one-time setup.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+      - name: Validate metadata
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # The 'pypi' environment gates the upload behind any required reviewers configured in GitHub.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/seatbelt-harness
+    permissions:
+      id-token: write # MANDATORY for OIDC token exchange with PyPI; no other scope needed.
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
