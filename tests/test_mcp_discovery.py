@@ -1,4 +1,4 @@
-from seatbelt.mcp_discovery import discover_annotations
+from agentbelt.mcp_discovery import discover_annotations
 
 
 def test_discover_annotations_from_trusted_server():

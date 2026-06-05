@@ -10,7 +10,7 @@ import math
 import re
 from collections import Counter
 
-from seatbelt.types import RiskConfig, RiskResult, Session
+from agentbelt.types import RiskConfig, RiskResult, Session
 
 
 def _tokenize(text: str) -> list[str]:

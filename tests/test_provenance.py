@@ -1,6 +1,6 @@
 """Unit tests for the provenance tracker (H2)."""
-from seatbelt.provenance import ProvenanceTracker, classify_message
-from seatbelt.types import Session
+from agentbelt.provenance import ProvenanceTracker, classify_message
+from agentbelt.types import Session
 
 
 def test_classify_by_role():
@@ -12,7 +12,7 @@ def test_classify_by_role():
 
 def test_host_app_trust_hint_overrides_role():
     # RAG text embedded in a user turn that the host app has marked untrusted
-    assert classify_message({"role": "user", "content": "doc", "_seatbelt_trust": "untrusted"}) == "untrusted"
+    assert classify_message({"role": "user", "content": "doc", "_agentbelt_trust": "untrusted"}) == "untrusted"
 
 
 def test_first_turn_user_only_is_user_trust():

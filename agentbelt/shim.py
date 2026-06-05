@@ -8,12 +8,12 @@ automatic taint propagation. The agent reports what it actually consumed.
 It shares the SAME Cedar policies as the gateway proxy (via CedarPDP).
 """
 
-from seatbelt.pdp import CedarPDP
-from seatbelt.tooltier import resolve_tier
-from seatbelt.types import AuthzRequest, Decision
+from agentbelt.pdp import CedarPDP
+from agentbelt.tooltier import resolve_tier
+from agentbelt.types import AuthzRequest, Decision
 
 
-class SeatbeltShim:
+class AgentbeltShim:
     """Cooperative in-process PEP for causal provenance-aware tool mediation."""
 
     def __init__(self, tool_tiers: dict, trusted_servers: list):
@@ -40,7 +40,7 @@ class SeatbeltShim:
         req = AuthzRequest(
             principal_id="in-process",
             action="InvokeTool",
-            resource_type="Seatbelt::Tool",
+            resource_type="Agentbelt::Tool",
             resource_id=name,
             context={
                 "provenance_max_trust": provenance_max_trust,

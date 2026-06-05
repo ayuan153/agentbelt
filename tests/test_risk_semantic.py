@@ -1,8 +1,8 @@
 """Tests for SemanticDriftRiskScorer — lexical drift proxy."""
 import math
 
-from seatbelt.risk_semantic import SemanticDriftRiskScorer
-from seatbelt.types import RiskConfig, Session
+from agentbelt.risk_semantic import SemanticDriftRiskScorer
+from agentbelt.types import RiskConfig, Session
 
 REF = "menu order nutrition hours locations refund burrito"
 

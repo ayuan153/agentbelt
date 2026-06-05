@@ -1,7 +1,7 @@
 """Tests for TokenWeightedBudgetGovernor (H0 / T7 denial-of-wallet)."""
 
-from seatbelt.budget import TokenWeightedBudgetGovernor
-from seatbelt.types import BudgetConfig, Session
+from agentbelt.budget import TokenWeightedBudgetGovernor
+from agentbelt.types import BudgetConfig, Session
 
 GOV = TokenWeightedBudgetGovernor()
 CFG = BudgetConfig(cost_units_per_window=10.0, window_seconds=3600)

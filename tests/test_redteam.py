@@ -1,9 +1,9 @@
 """Red-team replay tests — verifies all corpus attacks are blocked by a burrito-bot config."""
 from fastapi.testclient import TestClient
 
-from seatbelt.app import create_app
-from seatbelt.config import from_dict
-from seatbelt.redteam import CORPUS, _classify, run, summary
+from agentbelt.app import create_app
+from agentbelt.config import from_dict
+from agentbelt.redteam import CORPUS, _classify, run, summary
 
 CFG_DICT = {
     "agent": "BurritoBot",
@@ -69,7 +69,7 @@ def test_crescendo_needs_accumulation_not_single_turn():
         "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok!"}, "finish_reason": "stop"}],
         "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}))
     r1 = client1.post("/v1/chat/completions", json={"model": "t", "messages": turns[0]},
-                      headers={"X-Seatbelt-Session": "solo"})
+                      headers={"X-Agentbelt-Session": "solo"})
     blocked_first, _ = _classify(r1, cfg, None)
     assert not blocked_first, "turn 1 should pass the per-turn filter"
 

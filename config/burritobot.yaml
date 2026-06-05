@@ -1,5 +1,5 @@
 # Example operator config — a Chipotle-style facsimile (see docs/configurability.md §8).
-# Retargeting Seatbelt at another agent = editing THIS file, not the harness.
+# Retargeting Agentbelt at another agent = editing THIS file, not the harness.
 agent: burritobot
 
 scope:

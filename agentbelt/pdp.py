@@ -2,7 +2,7 @@
 
 import cedarpy
 
-from seatbelt.types import AuthzRequest, Decision
+from agentbelt.types import AuthzRequest, Decision
 
 
 class CedarPDP:
@@ -10,25 +10,25 @@ class CedarPDP:
 
     # MVP policy subset: default-deny via forbid-overrides-permit.
     POLICIES = """\
-permit(principal, action == Seatbelt::Action::"AdmitInput", resource);
-forbid(principal, action == Seatbelt::Action::"AdmitInput", resource) when { context.scope_verdict == "offscope" };
-permit(principal, action == Seatbelt::Action::"InvokeTool", resource);
-forbid(principal, action == Seatbelt::Action::"InvokeTool", resource) when { context.provenance_max_trust == "untrusted" && context.tier != "low" };
-forbid(principal, action == Seatbelt::Action::"InvokeTool", resource) when { context.tier == "high" && !(context.user_verified && context.human_confirmed) };
-permit(principal, action == Seatbelt::Action::"Egress", resource);
-forbid(principal, action == Seatbelt::Action::"Egress", resource) when { !resource.allowlisted };
+permit(principal, action == Agentbelt::Action::"AdmitInput", resource);
+forbid(principal, action == Agentbelt::Action::"AdmitInput", resource) when { context.scope_verdict == "offscope" };
+permit(principal, action == Agentbelt::Action::"InvokeTool", resource);
+forbid(principal, action == Agentbelt::Action::"InvokeTool", resource) when { context.provenance_max_trust == "untrusted" && context.tier != "low" };
+forbid(principal, action == Agentbelt::Action::"InvokeTool", resource) when { context.tier == "high" && !(context.user_verified && context.human_confirmed) };
+permit(principal, action == Agentbelt::Action::"Egress", resource);
+forbid(principal, action == Agentbelt::Action::"Egress", resource) when { !resource.allowlisted };
 """
 
     def decide(self, req: AuthzRequest) -> Decision:
         try:
             # cedarpy entity dict shape: {"uid": {"type": str, "id": str}, "attrs": dict, "parents": list}
             entities = [
-                {"uid": {"type": "Seatbelt::Session", "id": req.principal_id}, "attrs": {}, "parents": []},
+                {"uid": {"type": "Agentbelt::Session", "id": req.principal_id}, "attrs": {}, "parents": []},
                 {"uid": {"type": req.resource_type, "id": req.resource_id}, "attrs": req.resource_attrs, "parents": []},
             ]
             request = {
-                "principal": f'Seatbelt::Session::"{req.principal_id}"',
-                "action": f'Seatbelt::Action::"{req.action}"',
+                "principal": f'Agentbelt::Session::"{req.principal_id}"',
+                "action": f'Agentbelt::Action::"{req.action}"',
                 "resource": f'{req.resource_type}::"{req.resource_id}"',
                 "context": req.context,
             }

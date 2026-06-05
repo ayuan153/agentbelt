@@ -5,9 +5,9 @@ in config (`providers:` section) by either:
   - a built-in name (e.g. `"semantic"`), or
   - a dotted import path to your own factory, e.g. `"yourpkg.module:make_scorer"`.
 
-The factory receives the whole `SeatbeltConfig`, so a custom implementation has everything it needs
+The factory receives the whole `AgentbeltConfig`, so a custom implementation has everything it needs
 (charter, params, tool tiers, …). The thing it returns must satisfy the matching Protocol in
-`seatbelt/types.py` (ScopeGuard / RiskScorer / BudgetGovernor / EgressGuard / PolicyDecisionPoint).
+`agentbelt/types.py` (ScopeGuard / RiskScorer / BudgetGovernor / EgressGuard / PolicyDecisionPoint).
 
 No model training here — this is the plug-in seam for power users who bring their own.
 """
@@ -16,13 +16,13 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Callable
 
-from seatbelt.budget import TokenWeightedBudgetGovernor
-from seatbelt.egress import LinkPolicyEgressGuard
-from seatbelt.pdp import CedarPDP
-from seatbelt.provenance import ProvenanceTracker
-from seatbelt.risk import CrescendoRiskScorer
-from seatbelt.risk_semantic import SemanticDriftRiskScorer
-from seatbelt.scope import DeterministicScopeGuard
+from agentbelt.budget import TokenWeightedBudgetGovernor
+from agentbelt.egress import LinkPolicyEgressGuard
+from agentbelt.pdp import CedarPDP
+from agentbelt.provenance import ProvenanceTracker
+from agentbelt.risk import CrescendoRiskScorer
+from agentbelt.risk_semantic import SemanticDriftRiskScorer
+from agentbelt.scope import DeterministicScopeGuard
 
 Factory = Callable[[object], object]  # factory(cfg) -> component instance
 

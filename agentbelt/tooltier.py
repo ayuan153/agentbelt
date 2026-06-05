@@ -1,4 +1,4 @@
-"""Tool-sensitivity tier resolver for Seatbelt H3 tool/action mediation.
+"""Tool-sensitivity tier resolver for Agentbelt H3 tool/action mediation.
 
 Implements the precedence defined in docs/configurability.md §3 and ADR-0003:
   1. Operator override (authoritative)

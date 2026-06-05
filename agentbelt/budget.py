@@ -2,7 +2,7 @@
 
 import time
 
-from seatbelt.types import BudgetConfig, BudgetResult, Session
+from agentbelt.types import BudgetConfig, BudgetResult, Session
 
 
 class TokenWeightedBudgetGovernor:

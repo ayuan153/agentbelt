@@ -1,5 +1,5 @@
 import json, tempfile, os
-from seatbelt.dash import load, aggregate, render
+from agentbelt.dash import load, aggregate, render
 
 RECORDS = [
     {"session_id": "s1", "principal_key": "alice", "action": "chat", "decision": "allow", "reasons": [], "scope_verdict": "in", "cost_used": 0.5, "extra": {}},

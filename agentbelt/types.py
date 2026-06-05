@@ -1,4 +1,4 @@
-"""Seatbelt core types — the LOCKED contract shared by all guard modules.
+"""Agentbelt core types — the LOCKED contract shared by all guard modules.
 
 Implements the data model for the MVP denial-of-wallet slice
 (docs/lld/mvp-denial-of-wallet-slice.md). Names mirror ADR-0003
@@ -83,7 +83,7 @@ class RiskConfig:
 
 
 @dataclass
-class SeatbeltConfig:
+class AgentbeltConfig:
     agent: str
     scope: ScopeContract
     budget: BudgetConfig
@@ -139,7 +139,7 @@ class AuthzRequest:
 
     principal_id: str
     action: str
-    resource_type: str  # "Seatbelt::Answer" | "Seatbelt::Tool" | "Seatbelt::Destination"
+    resource_type: str  # "Agentbelt::Answer" | "Agentbelt::Tool" | "Agentbelt::Destination"
     resource_id: str
     context: dict = field(default_factory=dict)
     resource_attrs: dict = field(default_factory=dict)  # e.g. {"allowlisted": True} / {"tier": "high"}

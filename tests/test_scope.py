@@ -1,8 +1,8 @@
 """Tests for DeterministicScopeGuard — MVP denial-of-wallet slice."""
 import pytest
 
-from seatbelt.types import Message, ScopeContract, ScopeResult
-from seatbelt.scope import DeterministicScopeGuard
+from agentbelt.types import Message, ScopeContract, ScopeResult
+from agentbelt.scope import DeterministicScopeGuard
 
 # BurritoBot-style contract used across tests
 BURRITO_SCOPE = ScopeContract(

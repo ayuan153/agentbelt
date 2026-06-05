@@ -1,7 +1,7 @@
 """Tests for CedarPDP — verifies MVP policies against real cedarpy."""
 
-from seatbelt.pdp import CedarPDP
-from seatbelt.types import AuthzRequest
+from agentbelt.pdp import CedarPDP
+from agentbelt.types import AuthzRequest
 
 
 def make_pdp():
@@ -11,7 +11,7 @@ def make_pdp():
 def test_admit_input_onscope_allows():
     d = make_pdp().decide(AuthzRequest(
         principal_id="sess1", action="AdmitInput",
-        resource_type="Seatbelt::Message", resource_id="msg1",
+        resource_type="Agentbelt::Message", resource_id="msg1",
         context={"scope_verdict": "onscope"},
     ))
     assert d.effect == "allow"
@@ -20,7 +20,7 @@ def test_admit_input_onscope_allows():
 def test_admit_input_offscope_denies():
     d = make_pdp().decide(AuthzRequest(
         principal_id="sess1", action="AdmitInput",
-        resource_type="Seatbelt::Message", resource_id="msg1",
+        resource_type="Agentbelt::Message", resource_id="msg1",
         context={"scope_verdict": "offscope"},
     ))
     assert d.effect == "deny"
@@ -29,7 +29,7 @@ def test_admit_input_offscope_denies():
 def test_egress_allowlisted_allows():
     d = make_pdp().decide(AuthzRequest(
         principal_id="sess1", action="Egress",
-        resource_type="Seatbelt::Destination", resource_id="safe.com",
+        resource_type="Agentbelt::Destination", resource_id="safe.com",
         resource_attrs={"allowlisted": True},
     ))
     assert d.effect == "allow"
@@ -38,7 +38,7 @@ def test_egress_allowlisted_allows():
 def test_egress_not_allowlisted_denies():
     d = make_pdp().decide(AuthzRequest(
         principal_id="sess1", action="Egress",
-        resource_type="Seatbelt::Destination", resource_id="evil.com",
+        resource_type="Agentbelt::Destination", resource_id="evil.com",
         resource_attrs={"allowlisted": False},
     ))
     assert d.effect == "deny"
@@ -47,7 +47,7 @@ def test_egress_not_allowlisted_denies():
 def _invoke(tier, provenance="user", user_verified=False, human_confirmed=False):
     return CedarPDP().decide(AuthzRequest(
         principal_id="sess1", action="InvokeTool",
-        resource_type="Seatbelt::Tool", resource_id="some_tool",
+        resource_type="Agentbelt::Tool", resource_id="some_tool",
         context={"tier": tier, "provenance_max_trust": provenance,
                  "user_verified": user_verified, "human_confirmed": human_confirmed},
     ))

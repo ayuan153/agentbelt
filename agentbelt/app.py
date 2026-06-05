@@ -1,4 +1,4 @@
-"""Seatbelt model proxy (ADR-0001) — OpenAI-compatible /v1/chat/completions.
+"""Agentbelt model proxy (ADR-0001) — OpenAI-compatible /v1/chat/completions.
 
 Wires the MVP denial-of-wallet slice end to end
 (docs/lld/mvp-denial-of-wallet-slice.md):
@@ -20,11 +20,11 @@ from typing import Callable
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from seatbelt.mcp_discovery import discover_annotations
-from seatbelt.plugins import resolve as resolve_provider
-from seatbelt.telemetry import AuditSink
-from seatbelt.tooltier import resolve_tier
-from seatbelt.types import AuthzRequest, Message, SeatbeltConfig, Session, TelemetryRecord
+from agentbelt.mcp_discovery import discover_annotations
+from agentbelt.plugins import resolve as resolve_provider
+from agentbelt.telemetry import AuditSink
+from agentbelt.tooltier import resolve_tier
+from agentbelt.types import AuthzRequest, Message, AgentbeltConfig, Session, TelemetryRecord
 
 Upstream = Callable[[dict], dict]
 
@@ -37,7 +37,7 @@ def _est_tokens(text: str) -> int:
 
 def _completion(content: str, usage: dict | None = None) -> dict:
     return {
-        "id": f"seatbelt-{uuid.uuid4().hex[:12]}",
+        "id": f"agentbelt-{uuid.uuid4().hex[:12]}",
         "object": "chat.completion",
         "choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}],
         "usage": usage or {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
@@ -57,10 +57,10 @@ def _default_upstream(base_url: str) -> Upstream:
     return call
 
 
-def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=None) -> FastAPI:
-    app = FastAPI(title="Seatbelt", version="0.1.0")
+def create_app(cfg: AgentbeltConfig, upstream: Upstream | None = None, mcp_fetch=None) -> FastAPI:
+    app = FastAPI(title="Agentbelt", version="0.1.0")
     p = cfg.providers
-    # Each guard is resolved via a provider (built-in name or "module:factory"). See seatbelt/plugins.py.
+    # Each guard is resolved via a provider (built-in name or "module:factory"). See agentbelt/plugins.py.
     scope_guard = resolve_provider("scope", p.get("scope"), cfg)
     budget = resolve_provider("budget", p.get("budget"), cfg)
     egress = resolve_provider("egress", p.get("egress"), cfg)
@@ -69,14 +69,14 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=
     provenance = resolve_provider("provenance", p.get("provenance"), cfg)
     # Optional MCP annotation discovery from trusted servers (no startup network unless fetch given).
     registry = discover_annotations(cfg.trusted_tool_servers, fetch=mcp_fetch) if mcp_fetch else {}
-    audit = AuditSink(path=os.environ.get("SEATBELT_AUDIT_LOG"))
+    audit = AuditSink(path=os.environ.get("AGENTBELT_AUDIT_LOG"))
     sessions: dict[str, Session] = {}
     up = upstream or _default_upstream(cfg.upstream_base_url)
 
     app.state.audit = audit  # exposed for tests/ops
 
     def get_session(req: Request) -> Session:
-        key = req.headers.get("X-Seatbelt-Session") or (req.client.host if req.client else "anon")
+        key = req.headers.get("X-Agentbelt-Session") or (req.client.host if req.client else "anon")
         s = sessions.get(key)
         if s is None:
             s = Session(id=key, principal_key=key)
@@ -112,7 +112,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=
         # --- Cedar PDP: AdmitInput ---
         decision = pdp.decide(AuthzRequest(
             principal_id=session.id, action="AdmitInput",
-            resource_type="Seatbelt::Answer", resource_id="answer",
+            resource_type="Agentbelt::Answer", resource_id="answer",
             context={"scope_verdict": effective_verdict, "cost_used": int(session.cost_used),
                      "budget_remaining": int(br.budget_remaining)},
         ))
@@ -155,7 +155,7 @@ def create_app(cfg: SeatbeltConfig, upstream: Upstream | None = None, mcp_fetch=
                                     annotations=ann, server=srv)
                 d = pdp.decide(AuthzRequest(
                     principal_id=session.id, action="InvokeTool",
-                    resource_type="Seatbelt::Tool", resource_id=name,
+                    resource_type="Agentbelt::Tool", resource_id=name,
                     context={"provenance_max_trust": turn_trust, "tier": tier,
                              "user_verified": False, "human_confirmed": False}))
                 if d.effect == "allow":

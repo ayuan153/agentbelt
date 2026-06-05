@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from seatbelt.types import Message, ScopeContract, ScopeResult
+from agentbelt.types import Message, ScopeContract, ScopeResult
 
 # --- Layer-1: hard_deny category -> regex patterns ---------------------------
 

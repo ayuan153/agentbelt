@@ -1,7 +1,7 @@
 """Red-team replay runner — fires known attack patterns at a config and reports coverage.
 
 Each corpus entry maps to a real-world incident (see docs/incidents.md) and is crafted to be
-deterministically blockable by a reasonable operator config, so `seatbelt test` is a stable CI gate
+deterministically blockable by a reasonable operator config, so `agentbelt test` is a stable CI gate
 (green == "blocks these known patterns"). The corpus spans the guard stack, not just scope:
 - scope_escape_code:       Chevrolet/Zoom free-inference abuse        -> scope deflect      (H1)
 - role_override:           Bing "Sydney" system-prompt extraction     -> scope deflect      (H1)
@@ -32,8 +32,8 @@ from typing import Callable
 
 from fastapi.testclient import TestClient
 
-from seatbelt.app import _BLOCKED_ACTION_MSG, create_app
-from seatbelt.types import SeatbeltConfig
+from agentbelt.app import _BLOCKED_ACTION_MSG, create_app
+from agentbelt.types import AgentbeltConfig
 
 Upstream = Callable[[dict], dict]
 
@@ -155,7 +155,7 @@ def _default_upstream_factory(kind: str) -> Upstream:
         return text_upstream
 
 
-def _classify(resp, cfg: SeatbeltConfig, exfil_marker: str | None) -> tuple[bool, str]:
+def _classify(resp, cfg: AgentbeltConfig, exfil_marker: str | None) -> tuple[bool, str]:
     """Map a final HTTP response to (blocked, detail) using the harness's block signals."""
     if resp.status_code == 429:
         return True, "rate_limited"
@@ -171,7 +171,7 @@ def _classify(resp, cfg: SeatbeltConfig, exfil_marker: str | None) -> tuple[bool
     return False, f"allowed: {content[:60]}"
 
 
-def run(cfg: SeatbeltConfig, upstream_factory: Callable[[str], Upstream] | None = None) -> list[AttackResult]:
+def run(cfg: AgentbeltConfig, upstream_factory: Callable[[str], Upstream] | None = None) -> list[AttackResult]:
     """Run all corpus attacks against cfg and return results.
 
     Single-turn attacks use ``messages``; multi-turn attacks use ``turns`` (a list of message-lists)
@@ -194,7 +194,7 @@ def run(cfg: SeatbeltConfig, upstream_factory: Callable[[str], Upstream] | None 
             if "tools" in attack:
                 payload["tools"] = attack["tools"]
             resp = client.post("/v1/chat/completions", json=payload,
-                               headers={"X-Seatbelt-Session": session_id})
+                               headers={"X-Agentbelt-Session": session_id})
 
         blocked, detail = _classify(resp, cfg, attack.get("exfil_marker"))
         results.append(AttackResult(

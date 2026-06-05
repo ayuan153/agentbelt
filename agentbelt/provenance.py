@@ -5,7 +5,7 @@ invariant can be enforced: untrusted content (tool results, retrieved docs) must
 able to drive a sensitive tool call or egress (defends T3/T5 — EchoLeak/ForcedLeak/Slack).
 
 Trust tiers (lowest first): UNTRUSTED < USER < TRUSTED. Derived from OpenAI message roles
-by default; a host app may override per-message with a `_seatbelt_trust` hint (used only
+by default; a host app may override per-message with a `_agentbelt_trust` hint (used only
 for content it has itself classified — e.g. RAG text embedded in a user turn).
 
 `provenance_max_trust` is the most-trusted tier we can *safely attribute* to this turn's
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import hashlib
 
-from seatbelt.types import Session
+from agentbelt.types import Session
 
 TrustTier = str  # "trusted" | "user" | "untrusted"
 _RANK = {"untrusted": 0, "user": 1, "trusted": 2}
@@ -25,7 +25,7 @@ _BY_RANK = {0: "untrusted", 1: "user", 2: "trusted"}
 
 
 def classify_message(m: dict) -> TrustTier:
-    hint = m.get("_seatbelt_trust")
+    hint = m.get("_agentbelt_trust")
     if hint in _RANK:
         return hint
     role = m.get("role", "")

@@ -2,17 +2,17 @@
 
 `validate(cfg)` constructs every provider (the #1 misconfiguration: a bad built-in name or a
 dotted plugin path that won't import) and sanity-checks key knobs. Returns a list of error
-strings (empty = OK). Used by `python -m seatbelt` on boot and by `--check`.
+strings (empty = OK). Used by `python -m agentbelt` on boot and by `--check`.
 """
 from __future__ import annotations
 
-from seatbelt.plugins import resolve
-from seatbelt.types import SeatbeltConfig
+from agentbelt.plugins import resolve
+from agentbelt.types import AgentbeltConfig
 
 _KINDS = ("scope", "risk", "budget", "egress", "pdp", "provenance")
 
 
-def validate(cfg: SeatbeltConfig) -> list[str]:
+def validate(cfg: AgentbeltConfig) -> list[str]:
     errors: list[str] = []
     for kind in _KINDS:
         spec = cfg.providers.get(kind)

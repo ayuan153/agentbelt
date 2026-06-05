@@ -3,13 +3,13 @@
 Select it in config without touching the harness:
 
     providers:
-      risk: "seatbelt.contrib.example_plugin:make"
+      risk: "agentbelt.contrib.example_plugin:make"
 
-`make(cfg)` is the provider factory (receives the whole SeatbeltConfig). It returns any object
-implementing the `RiskScorer` protocol from `seatbelt.types`. Swap the body of `_predict` for a
+`make(cfg)` is the provider factory (receives the whole AgentbeltConfig). It returns any object
+implementing the `RiskScorer` protocol from `agentbelt.types`. Swap the body of `_predict` for a
 call into your own model/service — that's the whole integration.
 """
-from seatbelt.types import RiskResult
+from agentbelt.types import RiskResult
 
 
 class KeywordModelScorer:

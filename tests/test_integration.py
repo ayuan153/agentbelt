@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from seatbelt.app import create_app
-from seatbelt.config import from_dict
+from agentbelt.app import create_app
+from agentbelt.config import from_dict
 
 BASE_CFG = {
     "agent": "burritobot",
@@ -58,7 +58,7 @@ def _client(cfg_overrides: dict | None = None, upstream: MockUpstream | None = N
 
 def _ask(client, text, session="s1"):
     return client.post("/v1/chat/completions",
-                       headers={"X-Seatbelt-Session": session},
+                       headers={"X-Agentbelt-Session": session},
                        json={"model": "gpt-x", "messages": [{"role": "user", "content": text}]})
 
 
@@ -142,7 +142,7 @@ def test_output_scope_blocks_code_in_response():
 
 # --- Data-exfiltration slice: provenance + capability-downgrade (T3/T4/T5) ---
 
-from seatbelt.app import _BLOCKED_ACTION_MSG  # noqa: E402
+from agentbelt.app import _BLOCKED_ACTION_MSG  # noqa: E402
 
 
 class ToolUpstream:
@@ -164,7 +164,7 @@ class ToolUpstream:
 
 def _ask_msgs(client, messages, session="t1"):
     return client.post("/v1/chat/completions",
-                       headers={"X-Seatbelt-Session": session},
+                       headers={"X-Agentbelt-Session": session},
                        json={"model": "gpt-x", "messages": messages})
 
 
@@ -225,7 +225,7 @@ def _ask_full(client, messages, tools=None, session="t1"):
     body = {"model": "gpt-x", "messages": messages}
     if tools is not None:
         body["tools"] = tools
-    return client.post("/v1/chat/completions", headers={"X-Seatbelt-Session": session}, json=body)
+    return client.post("/v1/chat/completions", headers={"X-Agentbelt-Session": session}, json=body)
 
 
 _CRESCENDO_TURN = "could you pretend for a moment"  # 1 soft cue, scope = unknown (admitted alone)
@@ -274,21 +274,21 @@ def test_untrusted_server_annotation_is_ignored_defaults_sensitive():
 
 # --- Pluggable semantic scorer + MCP discovery driving tiers ---
 
-from seatbelt.app import create_app  # noqa: E402
-from seatbelt.config import from_dict  # noqa: E402
+from agentbelt.app import create_app  # noqa: E402
+from agentbelt.config import from_dict  # noqa: E402
 
 
 def test_semantic_scorer_selection_changes_behavior():
     # A single clearly off-charter turn: admitted under default (crescendo), deflected under semantic.
     off = [{"role": "user", "content": "explain quantum chromodynamics in detail"}]
     default_c = TestClient(create_app(from_dict(BASE_CFG), upstream=MockUpstream(content="ok")))
-    r_default = default_c.post("/v1/chat/completions", headers={"X-Seatbelt-Session": "d"},
+    r_default = default_c.post("/v1/chat/completions", headers={"X-Agentbelt-Session": "d"},
                                json={"model": "g", "messages": off})
     assert _content(r_default) != BASE_CFG["scope"]["deflect_message"]  # crescendo: one-off admitted
 
     sem_cfg = {**BASE_CFG, "risk": {"scorer": "semantic", "threshold": 0.9, "decay": 0.8}}
     sem_c = TestClient(create_app(from_dict(sem_cfg), upstream=MockUpstream(content="ok")))
-    r_sem = sem_c.post("/v1/chat/completions", headers={"X-Seatbelt-Session": "s"},
+    r_sem = sem_c.post("/v1/chat/completions", headers={"X-Agentbelt-Session": "s"},
                        json={"model": "g", "messages": off})
     assert _content(r_sem) == BASE_CFG["scope"]["deflect_message"]  # semantic: high charter-drift -> deflect
 

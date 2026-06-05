@@ -1,5 +1,5 @@
-"""Tests for seatbelt.tooltier — tier resolver precedence."""
-from seatbelt.tooltier import resolve_tier
+"""Tests for agentbelt.tooltier — tier resolver precedence."""
+from agentbelt.tooltier import resolve_tier
 
 
 def test_operator_override_beats_everything():

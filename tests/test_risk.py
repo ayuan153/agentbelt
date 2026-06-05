@@ -2,8 +2,8 @@
 
 import math
 
-from seatbelt.risk import CrescendoRiskScorer
-from seatbelt.types import RiskConfig, Session
+from agentbelt.risk import CrescendoRiskScorer
+from agentbelt.types import RiskConfig, Session
 
 
 def _session() -> Session:

@@ -6,7 +6,7 @@ This is the deterministic default implementation of the pluggable RiskScorer
 protocol; it uses NO LLM or network calls.
 """
 
-from seatbelt.types import RiskConfig, RiskResult, Session
+from agentbelt.types import RiskConfig, RiskResult, Session
 
 # Soft persuasion/escalation cues — substring matches on lowercased input.
 # These are SEPARATE from hard_deny patterns (handled by the scope guard) because

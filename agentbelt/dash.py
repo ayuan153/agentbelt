@@ -1,4 +1,4 @@
-"""Read-only dashboard for SEATBELT_AUDIT_LOG-style JSONL audit logs. Zero infra."""
+"""Read-only dashboard for AGENTBELT_AUDIT_LOG-style JSONL audit logs. Zero infra."""
 
 import json
 from collections import Counter
@@ -51,7 +51,7 @@ def render(path: str, console=None) -> dict:
     agg = aggregate(records)
 
     # Summary
-    t = Table(title="Seatbelt Audit Summary")
+    t = Table(title="Agentbelt Audit Summary")
     t.add_column("Metric"); t.add_column("Value")
     t.add_row("Total events", str(agg["total"]))
     t.add_row("Blocked", str(agg["blocked"]))

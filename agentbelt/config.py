@@ -1,35 +1,35 @@
-"""Config loader — parses an operator's YAML into a SeatbeltConfig.
+"""Config loader — parses an operator's YAML into a AgentbeltConfig.
 
 The YAML *is* the whole interface (see docs/configurability.md): retargeting
-Seatbelt at a different agent means editing this file, not the harness.
+Agentbelt at a different agent means editing this file, not the harness.
 """
 from __future__ import annotations
 
 import yaml
 
-from seatbelt.types import (
+from agentbelt.types import (
     BudgetConfig,
     EgressConfig,
     FailPosture,
     RiskConfig,
     ScopeContract,
-    SeatbeltConfig,
+    AgentbeltConfig,
 )
 
 
-def load_config(path: str) -> SeatbeltConfig:
+def load_config(path: str) -> AgentbeltConfig:
     with open(path) as f:
         raw = yaml.safe_load(f)
     return from_dict(raw)
 
 
-def from_dict(raw: dict) -> SeatbeltConfig:
+def from_dict(raw: dict) -> AgentbeltConfig:
     scope = ScopeContract(**raw["scope"])
     budget = BudgetConfig(**raw["budget"])
     egress = EgressConfig(**raw.get("egress", {}))
     fail = FailPosture(**raw.get("fail_posture", {}))
     risk = RiskConfig(**raw.get("risk", {}))
-    return SeatbeltConfig(
+    return AgentbeltConfig(
         agent=raw["agent"],
         scope=scope,
         budget=budget,

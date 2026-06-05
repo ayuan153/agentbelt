@@ -2,12 +2,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from seatbelt.app import create_app
-from seatbelt.config import from_dict
-from seatbelt.contrib.example_plugin import KeywordModelScorer
-from seatbelt.plugins import resolve
-from seatbelt.risk import CrescendoRiskScorer
-from seatbelt.scope import DeterministicScopeGuard
+from agentbelt.app import create_app
+from agentbelt.config import from_dict
+from agentbelt.contrib.example_plugin import KeywordModelScorer
+from agentbelt.plugins import resolve
+from agentbelt.risk import CrescendoRiskScorer
+from agentbelt.scope import DeterministicScopeGuard
 
 _CFG = {
     "agent": "burritobot",
@@ -34,7 +34,7 @@ def test_resolve_default_when_none():
 
 
 def test_resolve_dotted_path_loads_user_factory():
-    scorer = resolve("risk", "seatbelt.contrib.example_plugin:make", _cfg())
+    scorer = resolve("risk", "agentbelt.contrib.example_plugin:make", _cfg())
     assert isinstance(scorer, KeywordModelScorer)
 
 
@@ -44,7 +44,7 @@ def test_resolve_unknown_builtin_raises():
 
 
 def test_resolve_provenance_provider():
-    from seatbelt.provenance import ProvenanceTracker
+    from agentbelt.provenance import ProvenanceTracker
     assert isinstance(resolve("provenance", None, _cfg()), ProvenanceTracker)
 
 
@@ -57,12 +57,12 @@ class _Up:
 
 
 def _ask(client, text, session="p"):
-    return client.post("/v1/chat/completions", headers={"X-Seatbelt-Session": session},
+    return client.post("/v1/chat/completions", headers={"X-Agentbelt-Session": session},
                        json={"model": "g", "messages": [{"role": "user", "content": text}]})
 
 
 def test_custom_plugin_scorer_end_to_end():
-    cfg = _cfg(providers={"risk": "seatbelt.contrib.example_plugin:make"})
+    cfg = _cfg(providers={"risk": "agentbelt.contrib.example_plugin:make"})
     client = TestClient(create_app(cfg, upstream=_Up()))
     # the custom model trips on its keyword -> deflected without touching upstream content
     assert _ask(client, "do you sell banana smoothies").json()["choices"][0]["message"]["content"] == "nope"

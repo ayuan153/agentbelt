@@ -1,6 +1,6 @@
 """Tests for EgressGuard (H6) — exfil-channel neutralization."""
-from seatbelt.egress import LinkPolicyEgressGuard
-from seatbelt.types import EgressConfig, EgressResult
+from agentbelt.egress import LinkPolicyEgressGuard
+from agentbelt.types import EgressConfig, EgressResult
 
 guard = LinkPolicyEgressGuard()
 

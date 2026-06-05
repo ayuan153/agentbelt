@@ -1,7 +1,7 @@
 """Tests for fail-fast config validation + the check CLI."""
-from seatbelt.cli import main
-from seatbelt.config import from_dict
-from seatbelt.validate import validate
+from agentbelt.cli import main
+from agentbelt.config import from_dict
+from agentbelt.validate import validate
 
 _OK = {
     "agent": "b",
@@ -35,7 +35,7 @@ def test_check_cli_returns_0_on_valid(tmp_path, monkeypatch):
     import yaml
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(_OK))
-    monkeypatch.setenv("SEATBELT_CONFIG", str(p))
+    monkeypatch.setenv("AGENTBELT_CONFIG", str(p))
     assert main(["check"]) == 0
 
 
@@ -44,5 +44,5 @@ def test_check_cli_returns_1_on_invalid(tmp_path, monkeypatch):
     bad = {**_OK, "providers": {"pdp": "nope"}}
     p = tmp_path / "c.yaml"
     p.write_text(yaml.safe_dump(bad))
-    monkeypatch.setenv("SEATBELT_CONFIG", str(p))
+    monkeypatch.setenv("AGENTBELT_CONFIG", str(p))
     assert main(["check"]) == 1

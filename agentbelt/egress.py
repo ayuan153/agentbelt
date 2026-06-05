@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse
 
-from seatbelt.types import EgressConfig, EgressResult
+from agentbelt.types import EgressConfig, EgressResult
 
 # Patterns: markdown image, markdown link, bare URL (in that order for priority)
 _MD_IMG = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
