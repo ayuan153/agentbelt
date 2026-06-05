@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentbelt"
+name = "agentbelt-harness"
 version = "0.1.0"
 description = "A pluggable protective harness for conversational AI agents — drop-in OpenAI-compatible proxy that defends against jailbreaks, prompt injection, data exfiltration, and denial-of-wallet."
 readme = "README.md"

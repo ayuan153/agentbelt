@@ -6,7 +6,7 @@ by priority, not by date. ✅ = shipped.
 ## The on-ramp we're optimizing for
 
 ```
-pip install agentbelt              # one install
+pip install agentbelt-harness              # one install
 agentbelt init                     # scaffold a config
 # edit agentbelt.yaml
 agentbelt check                    # validate, fail-fast
@@ -28,9 +28,9 @@ with a one-line `base_url` change — no SDK required for interop.
 
 ## Phase 1 — Publish & frictionless install
 
-- **Publish to PyPI** so `pip install agentbelt` works for everyone (build with `python -m build`,
+- **Publish to PyPI** so `pip install agentbelt-harness` works for everyone (build with `python -m build`,
   upload via Trusted Publishing). Tag releases; semantic versioning. See [RELEASING.md](RELEASING.md).
-- **`pipx` / `uvx` support** so `uvx agentbelt serve` runs it with zero env setup.
+- **`pipx` / `uvx` support** so `uvx --from agentbelt-harness agentbelt serve` runs it with zero env setup.
 - **Container image** (`ghcr.io/.../agentbelt`) for `docker run` / sidecar deployment.
 - A few **ready-made example configs** (support bot, RAG assistant, coding assistant) shipped in the
   package and listed by `agentbelt init --template <name>`.

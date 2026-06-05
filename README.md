@@ -16,7 +16,7 @@ declarative policy about scope, data, spend, and tool use, then forwards to the 
 One belt, any vehicle. Swap the agent or the model — the policy stays put.
 
 ```bash
-pip install agentbelt
+pip install agentbelt-harness
 agentbelt init && agentbelt serve        # then set your agent's base_url to http://localhost:8088/v1
 ```
 
@@ -78,7 +78,7 @@ harness.
 ## Quickstart
 
 ```bash
-pip install agentbelt
+pip install agentbelt-harness
 
 agentbelt init                 # writes agentbelt.yaml — edit the scope/budget/tools for your agent
 agentbelt check                # validate config + all providers (fail-fast; great for CI)

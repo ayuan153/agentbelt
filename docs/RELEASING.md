@@ -11,7 +11,7 @@ distributions and uploads them from the `publish` job using a short-lived OIDC t
 
 1. **Register a pending publisher on PyPI.** Go to
    <https://pypi.org/manage/account/publishing/> and add a *pending* publisher with:
-   - **PyPI project name:** `agentbelt`
+   - **PyPI project name:** `agentbelt-harness`
    - **Owner:** `ayuan153`  ·  **Repository:** `agentbelt`
    - **Workflow filename:** `release.yml`
    - **Environment name:** `pypi`
@@ -40,8 +40,8 @@ distributions and uploads them from the `publish` job using a short-lived OIDC t
    ```
 5. **Approve the deployment.** The `release` workflow runs `build`, then pauses at the `publish`
    job waiting for the `pypi` environment reviewer. Approve it in the GitHub Actions UI.
-6. **Verify** the release appears at <https://pypi.org/project/agentbelt/> and installs
-   cleanly: `pipx install agentbelt` (or `pip install` in a fresh venv) then `agentbelt --help`.
+6. **Verify** the release appears at <https://pypi.org/project/agentbelt-harness/> and installs
+   cleanly: `pipx install agentbelt-harness` (or `pip install` in a fresh venv) then `agentbelt --help`.
 7. **Write GitHub release notes** for the tag.
 
 > Tags are immutable on PyPI: **a version can never be re-uploaded or overwritten.** If a release is
@@ -62,7 +62,7 @@ Optionally upload to TestPyPI first (requires a TestPyPI trusted publisher or to
 
 ```bash
 .venv/bin/twine upload --repository testpypi dist/*
-pip install --index-url https://test.pypi.org/simple/ agentbelt
+pip install --index-url https://test.pypi.org/simple/ agentbelt-harness
 ```
 
 ## What is NOT automated (by design)
