@@ -40,8 +40,10 @@ with a one-line `base_url` change — no SDK required for interop.
 - **Interactive `seatbelt init`** wizard: prompt for purpose/scope/tools, generate a tuned config.
 - **JSON Schema for the config** → editor autocomplete + inline validation in VS Code; `seatbelt
   check` already validates semantically, schema covers shape.
-- **`seatbelt test`**: replay a bundled red-team corpus (the `incidents.md` attacks) against the
-  user's config and report which are blocked — a confidence check before going live.
+- ✅ **`seatbelt test`**: replays a bundled red-team corpus (the `incidents.md` attacks) against the
+  user's config and reports which are blocked — a confidence check before going live. Exits non-zero
+  if any attack is allowed, so it doubles as a CI gate. See
+  [LLD](lld/dash-and-test-commands.md).
 - Config **profiles / layering** (base + per-env overrides) and secret references for upstream keys.
 
 ## Phase 3 — Pluggability into local CLI agents & frameworks
@@ -59,8 +61,9 @@ with a one-line `base_url` change — no SDK required for interop.
 
 ## Phase 4 — Observability & UI (ease of adoption)
 
-- **`seatbelt dash`**: a local TUI (textual/rich) over the audit log — live "what was blocked and
-  why," per-principal spend, risk scores, deflections. Zero infra.
+- ✅ **`seatbelt dash`** (snapshot): a local `rich` summary over the audit-log JSONL — decisions,
+  per-principal spend, recent blocks. Zero infra. A live-tail TUI (textual) and risk-score columns
+  remain future work. See [LLD](lld/dash-and-test-commands.md).
 - A small **web dashboard** (read-only over the telemetry stream) for teams; export to OTel/SIEM.
 - **Config editor UI**: visualize scope/tiers/egress and preview a decision against a sample turn.
 
