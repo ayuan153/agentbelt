@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,8 +8,24 @@ version = "0.1.0"
 description = "A pluggable protective harness for conversational AI agents — drop-in OpenAI-compatible proxy that defends against jailbreaks, prompt injection, data exfiltration, and denial-of-wallet."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Seatbelt contributors" }]
 keywords = ["llm", "security", "prompt-injection", "jailbreak", "guardrails", "ai-agents", "cedar"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Framework :: FastAPI",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 dependencies = [
     "fastapi>=0.110",
     "uvicorn>=0.27",
@@ -26,6 +42,10 @@ seatbelt = "seatbelt.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/ayuan153/seatbelt"
+Repository = "https://github.com/ayuan153/seatbelt"
+Documentation = "https://github.com/ayuan153/seatbelt/tree/main/docs"
+Issues = "https://github.com/ayuan153/seatbelt/issues"
+Releases = "https://github.com/ayuan153/seatbelt/releases"
 
 [tool.setuptools.packages.find]
 include = ["seatbelt*"]
